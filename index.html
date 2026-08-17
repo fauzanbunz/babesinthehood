@@ -1,1 +1,1665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Airport Departure Board</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;700&display=swap');
 
+        body {
+            background-color: #1a1a1a;
+            background-image: url('https://raw.githubusercontent.com/fauzanbunz/babesinthehood/main/ChatGPT%20Image%2010%20Agu%202026%2C%2010.08.58.png');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            color: #fff;
+            font-family: 'Oswald', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 2rem;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.65);
+            z-index: -1;
+        }
+
+        .board-container {
+            background-color: rgba(26, 26, 26, 0.88);
+            border: 4px solid #333;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.9), inset 0 0 20px rgba(0,0,0,0.6);
+            max-width: 1200px;
+            width: 100%;
+            overflow-x: auto;
+            backdrop-filter: blur(8px);
+            margin-bottom: 2rem; /* Add margin below board */
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 2rem;
+            color: #ccff00; 
+            width: 100%;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+        }
+
+        .utc-clock-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background-color: rgba(17, 17, 17, 0.7);
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: 1px solid #444;
+        }
+
+        .utc-label {
+            font-size: 1.5rem;
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+
+        .header-icon {
+            font-size: 3rem;
+            margin-right: 1rem;
+            background-color: #ccff00;
+            color: #222;
+            padding: 0.5rem;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .header-icon img {
+            width: 44px;
+            height: 44px;
+        }
+
+        .header-title {
+            font-size: 3.5rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .board-header-row {
+            display: grid;
+            grid-template-columns: 140px 310px 170px 110px 240px;
+            gap: 1rem;
+            color: #ccff00;
+            font-size: 1.2rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            padding-left: 5px;
+        }
+
+        .board-row {
+            display: grid;
+            grid-template-columns: 140px 310px 170px 110px 240px;
+            gap: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .cell {
+            display: flex;
+            gap: 3px;
+        }
+
+        .flap-panel {
+            width: 24px;
+            height: 36px;
+            background-color: #111;
+            border-radius: 3px;
+            position: relative;
+            perspective: 250px;
+            font-size: 20px;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #eeeeee;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.6);
+            border: 1px solid #333;
+            user-select: none;
+        }
+
+        .flap-panel::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: -1px;
+            right: -1px;
+            height: 1px;
+            background-color: rgba(0, 0, 0, 0.85);
+            z-index: 10;
+        }
+        
+        .flap-panel .char {
+            opacity: 0;
+            transition: opacity 0.1s;
+        }
+        
+        .flap-panel.visible .char {
+            opacity: 1;
+        }
+
+        @keyframes flipDown {
+            0% { transform: rotateX(0deg); opacity: 1; }
+            50% { transform: rotateX(-90deg); opacity: 0; }
+            51% { transform: rotateX(90deg); opacity: 0; }
+            100% { transform: rotateX(0deg); opacity: 1; }
+        }
+
+        .flap-panel.flipping::before {
+            content: attr(data-char);
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 50%;
+            background-color: #1a1a1a;
+            color: #eee;
+            display: flex;
+            justify-content: center;
+            overflow: hidden;
+            border-radius: 3px 3px 0 0;
+            transform-origin: bottom;
+            animation: flipDown 0.25s linear; /* Animasi dipercepat */
+            z-index: 5;
+            align-items: flex-end;
+            padding-bottom: 0px;
+            box-sizing: border-box;
+            border: 1px solid #333;
+            border-bottom: none;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 2rem;
+            width: 100%;
+            max-width: 800px;
+        }
+
+        .input-label {
+            color: #fff;
+            font-size: 1.3rem;
+            margin-bottom: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .flip-input-display {
+            display: flex;
+            gap: 3px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 10px;
+            cursor: pointer;
+            padding: 8px;
+            background: rgba(0,0,0,0.4);
+            border-radius: 6px;
+            border: 1px solid #444;
+            transition: all 0.3s ease;
+        }
+
+        .hidden-real-input {
+            opacity: 0;
+            position: absolute;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .claim-section {
+            background-color: rgba(34, 34, 34, 0.88);
+            border: 2px dashed #444;
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            width: 100%;
+            max-width: 600px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.7);
+            backdrop-filter: blur(8px);
+        }
+
+        .claim-title {
+            color: #ccff00;
+            font-size: 2rem;
+            text-transform: uppercase;
+            margin-bottom: 1.5rem;
+            letter-spacing: 1px;
+        }
+
+        .claim-input {
+            width: 100%;
+            padding: 1rem;
+            font-size: 1.2rem;
+            background-color: rgba(17, 17, 17, 0.9);
+            border: 1px solid #444;
+            color: #fff;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+            font-family: 'Oswald', sans-serif;
+            text-align: center;
+            text-transform: uppercase;
+        }
+        
+        .claim-input:focus {
+            outline: none;
+            border-color: #ccff00;
+            box-shadow: 0 0 8px rgba(204, 255, 0, 0.4);
+        }
+
+        .claim-btn {
+            background-color: #ccff00;
+            color: #111;
+            border: none;
+            padding: 1rem 2rem;
+            font-size: 1.2rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s;
+            width: 100%;
+        }
+
+        .claim-btn:hover {
+            background-color: #d4ff33; 
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(204, 255, 0, 0.4);
+        }
+
+        #message-box {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 5px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+            z-index: 4000;
+            font-size: 1.2rem;
+            animation: slideDown 0.3s ease-out;
+        }
+        
+        #message-box.error {
+            background-color: #f44336;
+        }
+
+        @keyframes slideDown {
+            from { top: -50px; opacity: 0; }
+            to { top: 20px; opacity: 1; }
+        }
+
+        #anti-bot-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(26, 26, 26, 0.95);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 5000;
+            backdrop-filter: blur(10px);
+        }
+
+        .captcha-wrapper {
+            width: 100%;
+            max-width: 320px;
+            margin: 20px auto;
+            font-family: 'Courier New', Courier, monospace;
+            text-align: center;
+            border: 3px solid #000;
+            padding: 10px;
+            background-color: #fff;
+            box-shadow: 4px 4px 0px #000;
+        }
+
+        .game-area {
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(to bottom, #87CEEB 60%, #EED6AF 40%);
+            position: relative;
+            overflow: hidden;
+            border: 2px solid #000;
+            cursor: crosshair;
+            touch-action: none; 
+        }
+
+        #coconut {
+            position: absolute;
+            font-size: 28px;
+            top: -30px;
+            left: 50%;
+            user-select: none;
+            z-index: 2;
+        }
+
+        #basket {
+            position: absolute;
+            font-size: 35px;
+            bottom: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            user-select: none;
+            z-index: 3;
+            transition: transform 0.05s ease;
+        }
+
+        .status-text {
+            margin-top: 15px;
+            font-weight: bold;
+            font-size: 14px;
+            color: #333;
+        }
+
+        .success-text {
+            color: #008000;
+        }
+
+        #passenger-info-screen {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            padding: 2rem;
+            overflow-y: auto;
+        }
+
+        .landing-title {
+            color: #ccff00;
+            font-size: 3rem;
+            text-transform: uppercase;
+            margin-bottom: 2rem;
+            letter-spacing: 2px;
+            text-align: center;
+            font-weight: 700;
+            text-shadow: 0 0 15px rgba(204, 255, 0, 0.4);
+        }
+
+        .start-btn {
+            background-color: #ccff00;
+            color: #111;
+            border: none;
+            padding: 1.2rem 3rem;
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 20px rgba(204, 255, 0, 0.4);
+            font-family: 'Oswald', sans-serif;
+        }
+
+        .start-btn:hover {
+            transform: scale(1.05) translateY(-3px);
+            box-shadow: 0 10px 30px rgba(204, 255, 0, 0.6);
+            background-color: #d4ff33;
+        }
+
+        #boarding-pass-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.92);
+            z-index: 3000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            backdrop-filter: blur(10px);
+        }
+
+        .pass-container {
+            background: transparent;
+            border-radius: 0;
+            padding: 0;
+            max-width: 1000px;
+            width: 95%;
+            max-height: 95vh;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .close-pass-btn {
+            position: absolute;
+            top: -40px;
+            right: 0px;
+            font-size: 3rem;
+            color: #ccff00;
+            cursor: pointer;
+            font-weight: bold;
+            z-index: 10;
+        }
+
+        /* The Custom Pure HTML Ticket */
+        .custom-ticket {
+            display: flex;
+            background-color: #ccff00;
+            border-radius: 20px;
+            color: #1a2a3a;
+            font-family: 'Oswald', sans-serif;
+            width: 100%;
+            max-width: 950px;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            overflow: hidden; 
+        }
+
+        .ticket-left {
+            flex: 2.8;
+            padding: 25px 30px;
+            border-right: 4px dotted #1a2a3a;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .ticket-right {
+            flex: 1.2;
+            padding: 25px 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Top Header Section */
+        .t-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .t-logo-area {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .t-logo-text {
+            font-size: 1.2rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            border-top: 2px solid #1a2a3a;
+            border-bottom: 2px solid #1a2a3a;
+            padding: 2px 0;
+            margin-top: 5px;
+        }
+        
+        .t-logo-lines {
+            height: 6px;
+            border-top: 2px solid #1a2a3a;
+            border-bottom: 1px solid #1a2a3a;
+            width: 150px;
+        }
+
+        .t-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-transform: uppercase;
+        }
+
+        .t-title-right {
+            font-size: 2rem;
+            font-weight: 700;
+            text-align: right;
+            width: 100%;
+            justify-content: flex-end;
+        }
+
+        .t-title svg {
+            width: 40px;
+            height: 40px;
+            fill: #1a2a3a;
+        }
+
+        /* Dark Middle Band */
+        .t-band {
+            background-color: #1a2a3a;
+            color: #ccff00;
+            margin: 0 -30px 15px -30px;
+            padding: 10px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .ticket-right .t-band {
+            margin: 0 -20px 15px -20px;
+            padding: 10px 20px;
+            justify-content: center;
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+
+        .band-group {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .band-label {
+            font-size: 1rem;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .band-code {
+            font-size: 4.5rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .band-center-icon {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .band-lines {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            width: 100px;
+        }
+        
+        .band-lines span {
+            height: 2px;
+            background-color: #ccff00;
+            width: 100%;
+        }
+        .band-lines span:nth-child(2) { width: 80%; }
+        .band-lines span:nth-child(3) { width: 60%; }
+
+        .band-center-icon svg {
+            width: 45px;
+            height: 45px;
+            fill: #ccff00;
+            transform: rotate(90deg);
+        }
+
+        /* Body Details Section */
+        .t-body {
+            position: relative;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .map-bg {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            height: auto;
+            opacity: 0.08; /* Super subtle */
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .details-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            row-gap: 20px;
+            column-gap: 40px;
+            z-index: 1;
+        }
+        
+        .stub-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            row-gap: 15px;
+            column-gap: 10px;
+            z-index: 1;
+        }
+
+        .d-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .stub-grid .d-item {
+            flex-direction: column;
+            gap: 0px;
+        }
+
+        .d-label {
+            font-size: 1.5rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            width: 130px;
+            flex-shrink: 0;
+        }
+        
+        .stub-grid .d-label {
+            font-size: 1.1rem;
+            width: auto;
+        }
+
+        .d-val {
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        
+        .stub-grid .d-val {
+            font-size: 1.2rem;
+        }
+
+        .t-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-top: 20px;
+            z-index: 1;
+        }
+        
+        .stub-footer {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 20px;
+            z-index: 1;
+        }
+
+        .barcode-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .barcode-bars {
+            height: 50px;
+            width: 220px;
+            background: repeating-linear-gradient(
+                to right,
+                #1a2a3a 0, #1a2a3a 3px,
+                transparent 3px, transparent 6px,
+                #1a2a3a 6px, #1a2a3a 8px,
+                transparent 8px, transparent 10px,
+                #1a2a3a 10px, #1a2a3a 15px,
+                transparent 15px, transparent 18px,
+                #1a2a3a 18px, #1a2a3a 20px,
+                transparent 20px, transparent 25px,
+                #1a2a3a 25px, #1a2a3a 27px,
+                transparent 27px, transparent 32px,
+                #1a2a3a 32px, #1a2a3a 36px,
+                transparent 36px, transparent 40px
+            );
+        }
+
+        .barcode-numbers {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1.1rem;
+            font-weight: bold;
+            letter-spacing: 5px;
+            margin-top: 5px;
+        }
+
+        .footer-logo {
+            font-size: 1rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            border-bottom: 2px solid #1a2a3a;
+            padding-bottom: 2px;
+        }
+        
+        .footer-logo svg {
+            width: 25px;
+            height: 25px;
+            fill: #1a2a3a;
+            transform: rotate(90deg);
+        }
+
+        /* Semi-circle cutouts top and bottom */
+        .custom-ticket::before, .custom-ticket::after {
+            content: '';
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background-color: rgba(0,0,0,0.92); /* match modal bg */
+            border-radius: 50%;
+            /* 70% is flex ratio 2.8 / 4 */
+            left: calc(70% - 15px); 
+            z-index: 10;
+        }
+        
+        .custom-ticket::before { top: -15px; }
+        .custom-ticket::after { bottom: -15px; }
+
+        @media (max-width: 900px) {
+            .custom-ticket { flex-direction: column; border-radius: 10px; }
+            .ticket-left { border-right: none; border-bottom: 4px dotted #1a2a3a; flex: 1; }
+            .ticket-right { flex: 1; }
+            .custom-ticket::before, .custom-ticket::after { display: none; }
+            .band-lines { display: none; }
+            .details-grid { grid-template-columns: 1fr; }
+        }
+
+        #success-msg {
+            color: #ccff00;
+            font-size: clamp(1.5rem, 4vw, 3rem);
+            font-weight: 700;
+            text-transform: uppercase;
+            text-shadow: 0 0 15px rgba(204, 255, 0, 0.6);
+            margin-bottom: 20px;
+            text-align: center;
+            letter-spacing: 2px;
+        }
+
+        .modal-actions {
+            margin-top: 25px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: rgba(0,0,0,0.7);
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px dashed #ccff00;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+
+        .validation-instruction {
+            color: #fff;
+            text-align: center;
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            font-family: 'Oswald', sans-serif;
+            letter-spacing: 1px;
+        }
+
+        .validation-instruction strong {
+            color: #ff3366;
+            font-size: 1.2rem;
+            text-transform: uppercase;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .action-btn {
+            padding: 12px 24px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            font-family: 'Oswald', sans-serif;
+            text-transform: uppercase;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .save-btn {
+            background-color: #eee;
+            color: #111;
+            box-shadow: 0 4px 10px rgba(255,255,255,0.2);
+        }
+        .save-btn:hover { background-color: #fff; transform: translateY(-2px); }
+
+        .share-btn {
+            background-color: #000;
+            color: #ccff00;
+            border: 2px solid #ccff00;
+            box-shadow: 0 4px 10px rgba(204, 255, 0, 0.2);
+        }
+        .share-btn:hover { background-color: #ccff00; color: #000; transform: translateY(-2px); }
+
+        .static-flap {
+            background-color: #ccff00 !important;
+            color: #111 !important;
+            border-color: #ccff00 !important;
+        }
+
+        @media (max-width: 900px) {
+            .board-header-row, .board-row {
+                min-width: 800px;
+            }
+            .header-title { font-size: 2.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <audio id="airport-audio" loop preload="auto">
+        <source src="https://raw.githubusercontent.com/fauzanbunz/babesinthehood/main/Airport%20Sounds%20-%20One%20Hour!!!%20The%20Most%20Complete%20Airport%20Ambience!%20(mp3cut.net).mp3" type="audio/mpeg">
+    </audio>
+
+    <div id="anti-bot-screen">
+        <div class="captcha-wrapper">
+            <div class="game-area" id="gameArea">
+                <div id="coconut">🥥</div>
+                <div id="basket">🧺</div>
+            </div>
+            <div class="status-text" id="statusText">MOVE THE BASKET TO CATCH 3 COCONUTS! (0/3)</div>
+        </div>
+    </div>
+
+    <div class="board-container">
+        <div class="header">
+            <div class="header-left">
+                <div class="header-icon">
+                    <img src="https://raw.githubusercontent.com/fauzanbunz/babesinthehood/main/plan.svg" alt="Plane Icon" onerror="this.src='https://placehold.co/44x44/ccff00/222222?text=✈'">
+                </div>
+                <div class="header-title">Departures</div>
+            </div>
+            
+            <div class="utc-clock-container">
+                <div class="utc-label">UTC</div>
+                <div class="cell" id="utc-clock">
+                    <!-- UTC panels dynamically injected -->
+                </div>
+            </div>
+        </div>
+
+        <div class="board-header-row">
+            <div>TIME</div>
+            <div>DESTINATION</div>
+            <div>FLIGHT</div>
+            <div>GATE</div>
+            <div>REMARK</div>
+        </div>
+
+        <div id="board-rows-container">
+            <!-- Main departure row injected by JS -->
+        </div>
+    </div>
+
+    <div class="claim-section">
+        <div class="claim-title">Claim Your Boarding Pass</div>
+        <input type="text" id="ticket-input" class="claim-input" placeholder="ENTER TICKET CODE" autocomplete="off">
+        <button id="claim-btn" class="claim-btn">Claim Pass</button>
+        <div id="claim-status-text" style="color: #f44336; margin-top: 10px; font-weight: bold; min-height: 24px;"></div>
+    </div>
+
+    <div id="passenger-info-screen">
+        <h1 class="landing-title">Ticket Validated!</h1>
+        <p style="color: #fff; font-size: 1.2rem; margin-bottom: 2rem; letter-spacing: 1px;">PLEASE ENTER PASSENGER INFORMATION</p>
+        
+        <div class="input-group">
+            <div class="input-label">Enter Twitter / X Username</div>
+            <div class="flip-input-display" id="twitter-display">
+                <!-- Flap panels injected dynamically -->
+            </div>
+            <input type="text" id="twitter-input" class="hidden-real-input" maxlength="15" autocomplete="off">
+        </div>
+
+        <div class="input-group">
+            <div class="input-label">Enter EVM Wallet Address</div>
+            <div class="flip-input-display" id="wallet-display">
+                <!-- Flap panels injected dynamically -->
+            </div>
+            <input type="text" id="wallet-input" class="hidden-real-input" maxlength="50" autocomplete="off">
+        </div>
+
+        <button id="start-btn" class="start-btn" style="display: none;">Generate Boarding Pass</button>
+    </div>
+
+    <div id="message-box"></div>
+    
+    <div id="boarding-pass-modal">
+        <div class="pass-container">
+            <span class="close-pass-btn" id="close-modal-btn">&times;</span>
+            <div id="success-msg">Congratulations, you are on the list!</div>
+            <div id="svg-pass-wrapper">
+                <!-- Ticket will be injected here -->
+            </div>
+            
+            <div class="modal-actions" id="modal-actions" style="display: none;">
+                <p class="validation-instruction">⚠️ <strong>Action Required:</strong> To validate your claim, you MUST share your boarding pass on X!</p>
+                <div class="action-buttons">
+                    <button id="save-pass-btn" class="action-btn save-btn">⬇️ Save PNG</button>
+                    <button id="share-x-btn" class="action-btn share-btn">𝕏 Share to X</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const MAX_ROWS = 1; 
+        let claimCount = 1; 
+        let isAnimating = false;
+        let currentRemarkIndex = 0;
+
+        // URL Google Apps Script Web App Anda
+        const GOOGLE_SHEET_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzYki2gR4JW4nauX62tDL-JDKx1g3Hk4K2dWxEaGH2_nBZm-7INKPAKMUHR-9wNaDOQ6Q/exec";
+
+        // Variabel untuk menyimpan data sementara
+        let pendingTicketCode = "";
+        let pendingFlightNum = "";
+        let pendingGateNum = "";
+        let pendingSeatStr = "";
+
+        // Mock Ticket Database
+        const TICKET_CODES = {
+            "EARLYBIRD": { capacity: 20, claimed: 0 },
+            "VIPACCESS": { capacity: 5, claimed: 5 },
+            "BABES2026": { capacity: 100, claimed: 12 }
+        };
+
+        let userData = {
+            twitter: "",
+            wallet: ""
+        };
+
+        const COL_LENGTHS = {
+            time: 5,         // HH:MM
+            destination: 12, // BABES ISLAND
+            flight: 6,       // RB001
+            gate: 3,         // A12
+            remark: 9        // BOARDING 
+        };
+
+        const REMARKS = ["BOARDING ", "ON TIME  ", "DELAYED  "];
+        const TWITTER_MAX = 15;
+        const WALLET_MAX = 50; 
+
+        const airplaneIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M497.9 142.1l-46.1 46.1c-4.7 4.7-11.6 6.5-18.1 4.7l-99.3-27.1-137.9 137.9 83.2 83.2c5.6 5.6 7.7 13.9 5.5 21.6l-20.9 73.1c-3.1 11-14.7 16.7-25.5 12.6l-85.1-32.3-59 59c-9.4 9.4-24.6 9.4-33.9 0l-17-17c-9.4-9.4-9.4-24.6 0-33.9l59-59-32.3-85.1c-4.1-10.8 1.6-22.4 12.6-25.5l73.1-20.9c7.7-2.2 16 0 21.6 5.5l83.2 83.2 137.9-137.9-27.1-99.3c-1.8-6.5 0-13.4 4.7-18.1l46.1-46.1c18.7-18.7 49.1-18.7 67.9 0l17 17c18.8 18.7 18.8 49.1 0 67.9z"/></svg>`;
+
+        function createFlapPanels(count) {
+            let html = '';
+            for (let i = 0; i < count; i++) {
+                html += `<div class="flap-panel" data-char=" "><span class="char"> </span></div>`;
+            }
+            return html;
+        }
+
+        function buildBoardDOM() {
+            const container = document.getElementById('board-rows-container');
+            if (!container) return;
+            container.innerHTML = '';
+            
+            for (let r = 0; r < MAX_ROWS; r++) {
+                const row = document.createElement('div');
+                row.className = 'board-row';
+                row.innerHTML = `
+                    <div class="cell" id="cell-time-${r}">${createFlapPanels(COL_LENGTHS.time)}</div>
+                    <div class="cell" id="cell-dest-${r}">${createFlapPanels(COL_LENGTHS.destination)}</div>
+                    <div class="cell" id="cell-flight-${r}">${createFlapPanels(COL_LENGTHS.flight)}</div>
+                    <div class="cell" id="cell-gate-${r}">${createFlapPanels(COL_LENGTHS.gate)}</div>
+                    <div class="cell" id="cell-remark-${r}">${createFlapPanels(COL_LENGTHS.remark)}</div>
+                `;
+                container.appendChild(row);
+            }
+        }
+
+        function getUTCNow() {
+            const now = new Date();
+            const h = String(now.getUTCHours()).padStart(2, '0');
+            const m = String(now.getUTCMinutes()).padStart(2, '0');
+            return `${h}:${m}`;
+        }
+
+        function startUTCClock() {
+            const clockContainer = document.getElementById('utc-clock');
+            if (!clockContainer) return;
+            clockContainer.innerHTML = createFlapPanels(5);
+
+            function updateClock() {
+                const timeStr = getUTCNow();
+                const panels = clockContainer.querySelectorAll('.flap-panel');
+                for (let i = 0; i < panels.length; i++) {
+                    if (panels[i]) {
+                        const charSpan = panels[i].querySelector('.char');
+                        if (charSpan && charSpan.textContent !== timeStr[i]) {
+                            flipPanel(panels[i], timeStr[i]);
+                        }
+                    }
+                }
+            }
+
+            updateClock();
+            setInterval(updateClock, 5000);
+        }
+
+        function generateRandomTime() {
+            const h = String(Math.floor(Math.random() * 24)).padStart(2, '0');
+            const m = String(Math.floor(Math.random() * 60)).padStart(2, '0');
+            return `${h}:${m}`;
+        }
+
+        function generateRandomGate() {
+            const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            const randomLetter = letters.charAt(Math.floor(Math.random() * letters.length));
+            const randomNum = String(Math.floor(Math.random() * 99) + 1).padStart(2, '0');
+            return `${randomLetter}${randomNum}`;
+        }
+
+        function formatFlight(count) {
+            return `RB${String(count).padStart(3, '0')} `;
+        }
+
+        async function flipPanel(panelElement, targetChar) {
+            return new Promise(resolve => {
+                const charSpan = panelElement.querySelector('.char');
+                const currentChar = charSpan.textContent || ' ';
+
+                if (currentChar === targetChar) {
+                    resolve();
+                    return;
+                }
+
+                panelElement.setAttribute('data-char', currentChar);
+                panelElement.classList.add('flipping');
+                charSpan.style.opacity = '0';
+
+                // Timing dipercepat
+                setTimeout(() => {
+                    charSpan.textContent = targetChar;
+                    charSpan.style.opacity = '1';
+                    panelElement.classList.add('visible');
+
+                    setTimeout(() => {
+                        panelElement.classList.remove('flipping');
+                        resolve();
+                    }, 125); // Penundaan akhir panel flip dipercepat
+                }, 125); // Titik tengah flip dipercepat
+            });
+        }
+
+        async function animateCellString(cellId, targetString) {
+            const cell = document.getElementById(cellId);
+            if (!cell) return;
+            const panels = cell.querySelectorAll('.flap-panel');
+            const paddedStr = String(targetString).padEnd(panels.length, ' ').substring(0, panels.length);
+
+            for (let i = 0; i < panels.length; i++) {
+                await flipPanel(panels[i], paddedStr[i]);
+                await new Promise(r => setTimeout(r, 50)); // Jeda antar huruf dipercepat (efek ngetik lebih cepat)
+            }
+        }
+
+        async function clearCellString(cellId) {
+            const cell = document.getElementById(cellId);
+            if (!cell) return;
+            const panels = cell.querySelectorAll('.flap-panel');
+
+            for (let i = 0; i < panels.length; i++) {
+                await flipPanel(panels[i], ' ');
+                await new Promise(r => setTimeout(r, 30)); // Jeda pembersihan dipercepat
+            }
+        }
+
+        async function runBoardAnimationLoop() {
+            if (isAnimating) return;
+            isAnimating = true;
+
+            while (true) {
+                const rIndex = 0;
+                const timeVal = generateRandomTime();
+                const destVal = "BABES ISLAND";
+                const flightVal = formatFlight(claimCount);
+                const gateVal = generateRandomGate();
+                const remarkVal = REMARKS[currentRemarkIndex % REMARKS.length];
+                currentRemarkIndex++;
+
+                await animateCellString(`cell-time-${rIndex}`, timeVal);
+                await animateCellString(`cell-dest-${rIndex}`, destVal);
+                await animateCellString(`cell-flight-${rIndex}`, flightVal);
+                await animateCellString(`cell-gate-${rIndex}`, gateVal);
+                await animateCellString(`cell-remark-${rIndex}`, remarkVal);
+
+                await new Promise(res => setTimeout(res, 3500));
+
+                await clearCellString(`cell-remark-${rIndex}`);
+                await clearCellString(`cell-gate-${rIndex}`);
+                await clearCellString(`cell-flight-${rIndex}`);
+                await clearCellString(`cell-dest-${rIndex}`);
+                await clearCellString(`cell-time-${rIndex}`);
+
+                await new Promise(res => setTimeout(res, 800));
+            }
+        }
+
+        function buildInputDisplays() {
+            const twitDisplay = document.getElementById('twitter-display');
+            const walDisplay = document.getElementById('wallet-display');
+            
+            if (twitDisplay) {
+                twitDisplay.innerHTML = `<div class="flap-panel static-flap"><span class="char" style="opacity: 1;">@</span></div>` + createFlapPanels(TWITTER_MAX);
+            }
+            if (walDisplay) {
+                walDisplay.innerHTML = createFlapPanels(WALLET_MAX);
+            }
+        }
+
+        function updateInputDisplay(inputId, displayId, maxLen) {
+            const inputVal = document.getElementById(inputId).value.toUpperCase();
+            const displayEl = document.getElementById(displayId);
+            if (!displayEl) return;
+            
+            const panels = displayEl.querySelectorAll('.flap-panel:not(.static-flap)');
+            const paddedVal = String(inputVal).padEnd(maxLen, ' ').substring(0, maxLen);
+
+            for (let i = 0; i < maxLen; i++) {
+                if (panels[i]) {
+                    const charSpan = panels[i].querySelector('.char');
+                    if (charSpan && charSpan.textContent !== paddedVal[i]) {
+                        flipPanel(panels[i], paddedVal[i]);
+                    }
+                }
+            }
+
+            checkStartButtonVisibility();
+        }
+
+        function checkStartButtonVisibility() {
+            const twit = document.getElementById('twitter-input').value.trim();
+            const wal = document.getElementById('wallet-input').value.trim();
+            const btn = document.getElementById('start-btn');
+
+            if (twit.length > 0 && wal.length >= 10) { 
+                btn.style.display = 'block';
+                userData.twitter = twit;
+                userData.wallet = wal;
+            } else {
+                btn.style.display = 'none';
+            }
+        }
+
+        function showMessage(msg, type = 'success') {
+            const box = document.getElementById('message-box');
+            if (!box) return;
+            box.textContent = msg;
+            box.className = type === 'error' ? 'error' : '';
+            box.style.display = 'block';
+            setTimeout(() => {
+                box.style.display = 'none';
+            }, 3000);
+        }
+
+        async function sendDataToSpreadsheet() {
+            if (GOOGLE_SHEET_WEBAPP_URL === "TARUH_URL_GOOGLE_APPS_SCRIPT_ANDA_DISINI") {
+                console.log("URL Spreadsheet belum diisi. Melanjutkan tanpa menyimpan...");
+                return;
+            }
+
+            // HANYA MENGIRIMKAN NAMA TWITTER DAN EVM WALLET SESUAI PERMINTAAN
+            const dataToSave = {
+                twitter: "@" + userData.twitter,
+                wallet: userData.wallet
+            };
+
+            try {
+                await fetch(GOOGLE_SHEET_WEBAPP_URL, {
+                    method: "POST",
+                    mode: "no-cors",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(dataToSave)
+                });
+                console.log("Data (Twitter & Wallet) berhasil dikirim ke antrean spreadsheet.");
+            } catch (error) {
+                console.error("Gagal menyimpan data:", error);
+            }
+        }
+
+        async function generateBoardingPass() {
+            const wrapper = document.getElementById('svg-pass-wrapper');
+            const actionsContainer = document.getElementById('modal-actions');
+            actionsContainer.style.display = 'none'; 
+            
+            const flightNum = pendingFlightNum;
+            const gateNum = pendingGateNum;
+            
+            const d = new Date();
+            const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+            const dateStr = `${String(d.getUTCDate()).padStart(2, '0')} ${months[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+            const timeStr = getUTCNow() + " UTC";
+
+            const seatStr = pendingSeatStr;
+            const passengerName = userData.twitter ? "@" + userData.twitter : "@PASSENGER";
+
+            wrapper.innerHTML = `
+                <div class="custom-ticket" id="the-ticket-wrapper">
+                    <!-- MAIN LEFT TICKET -->
+                    <div class="ticket-left">
+                        <div class="t-top">
+                            <div class="t-logo-area">
+                                <div class="t-logo-lines"></div>
+                                <div class="t-logo-text">BABES AIR WAYS</div>
+                            </div>
+                            <div class="t-title">
+                                ${airplaneIcon} BOARDING PASS
+                            </div>
+                        </div>
+
+                        <div class="t-band">
+                            <div class="band-group">
+                                <span class="band-label">ROBINHOOD</span>
+                                <span class="band-code">RBH</span>
+                            </div>
+                            <div class="band-center-icon">
+                                <div class="band-lines"><span></span><span></span><span></span></div>
+                                ${airplaneIcon}
+                            </div>
+                            <div class="band-group">
+                                <span class="band-code">BSI</span>
+                                <span class="band-label">BABES ISLAND</span>
+                            </div>
+                        </div>
+
+                        <div class="t-body">
+                            <!-- Simple SVG map overlay -->
+                            <svg class="map-bg" viewBox="0 0 1000 500" fill="#1a2a3a">
+                                <path d="M100 250c0-50 40-100 100-100s150 20 200 50 80 120 150 120 150-50 200-100 80-50 100 0-30 150-100 150-150-50-200-100-100-80-150-80-200 40-200 100-40 20-40 20-60-110-60-160z"/>
+                                <path d="M700 150c20-30 60-50 100-30s50 80 20 100-80 0-100-30-20-40-20-40z"/>
+                                <path d="M300 400c20 30 70 40 100 10s40-70 10-90-80 20-100 40-20 40-10 40z"/>
+                            </svg>
+
+                            <div class="details-grid">
+                                <!-- Column 1 -->
+                                <div>
+                                    <div class="d-item">
+                                        <span class="d-label">NAME:</span>
+                                        <span class="d-val">${passengerName}</span>
+                                    </div>
+                                    <div class="d-item" style="margin-top: 15px;">
+                                        <span class="d-label">DATE:</span>
+                                        <span class="d-val">${dateStr}</span>
+                                    </div>
+                                    <div class="d-item" style="margin-top: 15px;">
+                                        <span class="d-label">BOARDING:</span>
+                                        <span class="d-val">${timeStr}</span>
+                                    </div>
+                                </div>
+                                <!-- Column 2 -->
+                                <div>
+                                    <div class="d-item">
+                                        <span class="d-label">FLIGHT:</span>
+                                        <span class="d-val">${flightNum}</span>
+                                    </div>
+                                    <div class="d-item" style="margin-top: 15px;">
+                                        <span class="d-label">GATE:</span>
+                                        <span class="d-val">${gateNum}</span>
+                                    </div>
+                                    <div class="d-item" style="margin-top: 15px;">
+                                        <span class="d-label">SEAT:</span>
+                                        <span class="d-val">${seatStr}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="t-footer">
+                                <div class="barcode-container">
+                                    <div class="barcode-bars"></div>
+                                    <div class="barcode-numbers">0 734664 235788</div>
+                                </div>
+                                <div class="footer-logo">BABES AIR WAYS ${airplaneIcon}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- STUB RIGHT TICKET -->
+                    <div class="ticket-right">
+                        <div class="t-top">
+                            <div class="t-title t-title-right">FIRST CLASS</div>
+                        </div>
+                        <div class="t-band">
+                            RBH - BSI
+                        </div>
+                        <div class="t-body">
+                            <div class="stub-grid">
+                                <div class="d-item">
+                                    <span class="d-label">FLIGHT:</span>
+                                    <span class="d-val">${flightNum}</span>
+                                </div>
+                                <div class="d-item">
+                                    <span class="d-label">GATE:</span>
+                                    <span class="d-val">${gateNum}</span>
+                                </div>
+                                <div class="d-item">
+                                    <span class="d-label">BOARDING:</span>
+                                    <span class="d-val">${timeStr}</span>
+                                </div>
+                                <div class="d-item">
+                                    <span class="d-label">SEAT:</span>
+                                    <span class="d-val">${seatStr}</span>
+                                </div>
+                                <div class="d-item">
+                                    <span class="d-label">NAME:</span>
+                                    <span class="d-val">${passengerName}</span>
+                                </div>
+                                <div class="d-item">
+                                    <span class="d-label">DATE:</span>
+                                    <span class="d-val">${dateStr}</span>
+                                </div>
+                            </div>
+                            
+                            <div class="stub-footer">
+                                <div class="barcode-container" style="transform: scale(0.8); transform-origin: right bottom;">
+                                    <div class="barcode-bars"></div>
+                                    <div class="barcode-numbers">0 734664 235788</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('boarding-pass-modal').style.display = 'flex';
+            
+            setTimeout(() => {
+                actionsContainer.style.display = 'flex';
+            }, 1000);
+
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 200,
+                    spread: 90,
+                    origin: { y: 0.6 },
+                    colors: ['#ccff00', '#ffffff', '#1a1a1a', '#ff00aa', '#00e5ff']
+                });
+                setTimeout(() => {
+                    confetti({ particleCount: 100, spread: 120, origin: { y: 0.6 } });
+                }, 400);
+            }
+        }
+
+        document.getElementById('save-pass-btn').addEventListener('click', () => {
+            const ticketElement = document.getElementById('the-ticket-wrapper');
+            const originalBtnText = document.getElementById('save-pass-btn').innerHTML;
+            document.getElementById('save-pass-btn').innerHTML = '⏳ Saving...';
+            
+            html2canvas(ticketElement, {
+                backgroundColor: null,
+                scale: 2 
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `BabesIsland_BoardingPass_${userData.twitter || 'VIP'}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                document.getElementById('save-pass-btn').innerHTML = '✅ Saved!';
+                setTimeout(() => {
+                    document.getElementById('save-pass-btn').innerHTML = originalBtnText;
+                }, 2000);
+            }).catch(err => {
+                console.error("Could not save image", err);
+                document.getElementById('save-pass-btn').innerHTML = '❌ Error';
+            });
+        });
+
+        document.getElementById('share-x-btn').addEventListener('click', () => {
+            const tweetText = encodeURIComponent(`I just claimed my exclusive boarding pass to Babes Island! 🏝️✨ The journey of a lifetime awaits. I'm waiting for you next, secure your spot before they're gone!\n\n@BabesInTheHood\n#BabesIsland #Web3 #BoardingPass`);
+            window.open(`https://twitter.com/intent/tweet?text=${tweetText}`, '_blank');
+        });
+
+        document.getElementById('twitter-input').addEventListener('input', () => updateInputDisplay('twitter-input', 'twitter-display', TWITTER_MAX));
+        document.getElementById('wallet-input').addEventListener('input', () => updateInputDisplay('wallet-input', 'wallet-display', WALLET_MAX));
+
+        document.getElementById('twitter-display').addEventListener('click', () => {
+            document.getElementById('twitter-input').focus();
+            document.getElementById('twitter-display').style.borderColor = "#ccff00";
+            document.getElementById('wallet-display').style.borderColor = "#444";
+        });
+
+        document.getElementById('wallet-display').addEventListener('click', () => {
+            document.getElementById('wallet-input').focus();
+            document.getElementById('wallet-display').style.borderColor = "#ccff00";
+            document.getElementById('twitter-display').style.borderColor = "#444";
+        });
+
+        document.getElementById('close-modal-btn').addEventListener('click', () => {
+            document.getElementById('boarding-pass-modal').style.display = 'none';
+        });
+
+        document.getElementById('claim-btn').addEventListener('click', () => {
+            const inputElement = document.getElementById('ticket-input');
+            const statusElement = document.getElementById('claim-status-text');
+            const ticketVal = inputElement.value.trim().toUpperCase();
+
+            statusElement.textContent = "";
+
+            if (ticketVal === "") {
+                statusElement.textContent = "PLEASE ENTER A TICKET CODE";
+                return;
+            }
+
+            const ticketData = TICKET_CODES[ticketVal];
+
+            if (!ticketData) {
+                statusElement.textContent = "INVALID TICKET CODE. PLEASE TRY AGAIN.";
+                return;
+            }
+
+            if (ticketData.claimed >= ticketData.capacity) {
+                statusElement.textContent = `TICKET CODE '${ticketVal}' IS FULLY CLAIMED.`;
+                return;
+            }
+
+            ticketData.claimed += 1;
+            claimCount++;
+            
+            pendingTicketCode = ticketVal;
+            pendingFlightNum = formatFlight(claimCount).trim();
+            pendingGateNum = generateRandomGate();
+            pendingSeatStr = `${ticketData.claimed}/${ticketData.capacity}`;
+
+            inputElement.value = '';
+
+            showMessage(`Success! Ticket Validated. Please enter your details.`, 'success');
+            
+            document.getElementById('passenger-info-screen').style.display = 'flex';
+            setTimeout(() => {
+                document.getElementById('twitter-input').focus();
+            }, 500);
+        });
+
+        document.getElementById('ticket-input').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                document.getElementById('claim-btn').click();
+            }
+        });
+
+        document.getElementById('start-btn').addEventListener('click', () => {
+            const landing = document.getElementById('passenger-info-screen');
+            
+            const originalText = document.getElementById('start-btn').innerHTML;
+            document.getElementById('start-btn').innerHTML = 'GENERATING...';
+
+            sendDataToSpreadsheet();
+
+            setTimeout(() => {
+                landing.style.display = 'none';
+                document.getElementById('start-btn').innerHTML = originalText;
+                
+                generateBoardingPass();
+            }, 800);
+        });
+
+        function initAntiBotGame() {
+            const gameArea = document.getElementById('gameArea');
+            const coconut = document.getElementById('coconut');
+            const basket = document.getElementById('basket');
+            const statusText = document.getElementById('statusText');
+
+            let coconutY = -30;
+            let isVerified = false;
+            let fallSpeed = 3; 
+            let animationId;
+            let coconutsCaught = 0;
+
+            // Memastikan ukuran diambil secara real-time untuk mencegah bug nilai 0
+            function resetCoconut() {
+                let gw = gameArea.clientWidth || 300;
+                coconutY = -30;
+                
+                // Mencegah kelapa jatuh di tengah (letak default keranjang)
+                let center = gw / 2;
+                let deadZone = 45; // Radius aman dari titik tengah
+                let coconutX;
+
+                if (Math.random() < 0.5) {
+                    // Muncul di area KIRI
+                    let maxLeft = center - deadZone;
+                    coconutX = 25 + Math.random() * (maxLeft - 25);
+                } else {
+                    // Muncul di area KANAN
+                    let minRight = center + deadZone;
+                    coconutX = minRight + Math.random() * (gw - 25 - minRight);
+                }
+                
+                coconut.style.left = coconutX + 'px';
+                coconut.style.top = coconutY + 'px';
+            }
+
+            resetCoconut();
+
+            function moveBasket(e) {
+                if (isVerified) return;
+                
+                // Mencegah layar ter-scroll saat dimainkan di HP
+                if(e.type === 'touchmove') e.preventDefault();
+                
+                let rect = gameArea.getBoundingClientRect();
+                let clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+                let gw = gameArea.clientWidth || 300;
+                
+                let x = clientX - rect.left;
+                
+                // Batasi pergerakan keranjang agar tidak hilang dari layar
+                if (x < 25) x = 25;
+                if (x > gw - 25) x = gw - 25;
+                
+                basket.style.left = x + 'px';
+            }
+
+            gameArea.addEventListener('mousemove', moveBasket);
+            gameArea.addEventListener('touchmove', moveBasket, { passive: false });
+
+            function gameLoop() {
+                if (isVerified) return;
+
+                let gh = gameArea.clientHeight || 200;
+                coconutY += fallSpeed;
+                coconut.style.top = coconutY + 'px';
+
+                let basketRect = basket.getBoundingClientRect();
+                let coconutRect = coconut.getBoundingClientRect();
+
+                // Hitung titik tengah keranjang & kelapa agar deteksi tabrakan lebih halus
+                let basketCenterX = basketRect.left + basketRect.width / 2;
+                let coconutCenterX = coconutRect.left + coconutRect.width / 2;
+                let distanceX = Math.abs(basketCenterX - coconutCenterX);
+
+                if (
+                    coconutRect.bottom >= basketRect.top + 5 && 
+                    coconutRect.top <= basketRect.bottom &&
+                    distanceX < (basketRect.width / 2 + 15) // Area tangkap lebih masuk akal
+                ) {
+                    coconutsCaught++;
+                    if (coconutsCaught >= 3) {
+                        verifikasiSukses();
+                        return;
+                    } else {
+                        statusText.innerText = `MOVE THE BASKET TO CATCH 3 COCONUTS! (${coconutsCaught}/3)`;
+                        resetCoconut();
+                    }
+                }
+
+                if (coconutY > gh) {
+                    resetCoconut();
+                }
+
+                if (!isVerified) {
+                    animationId = requestAnimationFrame(gameLoop);
+                }
+            }
+
+            function verifikasiSukses() {
+                isVerified = true;
+                cancelAnimationFrame(animationId);
+                
+                coconut.style.display = 'none'; 
+                basket.innerText = '✅'; 
+                
+                statusText.innerText = "VERIFICATION SUCCESSFUL!";
+                statusText.classList.add("success-text");
+                gameArea.style.borderColor = "#008000"; 
+
+                setTimeout(() => {
+                    const audio = document.getElementById('airport-audio');
+                    if (audio) {
+                        audio.volume = 0.5;
+                        audio.play().catch(err => console.log("Audio play blocked:", err));
+                    }
+
+                    const antiBotScreen = document.getElementById('anti-bot-screen');
+                    antiBotScreen.style.opacity = '0';
+                    antiBotScreen.style.transition = 'opacity 0.5s ease';
+                    
+                    setTimeout(() => {
+                        antiBotScreen.style.display = 'none';
+                        runBoardAnimationLoop(); // Mulai animasi
+                    }, 500);
+                }, 1000);
+            }
+
+            gameLoop();
+        }
+
+        window.onload = () => {
+            buildBoardDOM();
+            buildInputDisplays();
+            startUTCClock();
+            
+            // Initialize the catch coconut game on load
+            initAntiBotGame();
+        };
+    </script>
+</body>
+</html>
