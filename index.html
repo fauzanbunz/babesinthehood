@@ -1040,13 +1040,14 @@
             const now = new Date();
             const h = String(now.getUTCHours()).padStart(2, '0');
             const m = String(now.getUTCMinutes()).padStart(2, '0');
-            return `${h}:${m}`;
+            const s = String(now.getUTCSeconds()).padStart(2, '0');
+            return `${h}:${m}:${s}`;
         }
 
         function startUTCClock() {
             const clockContainer = document.getElementById('utc-clock');
             if (!clockContainer) return;
-            clockContainer.innerHTML = createFlapPanels(5);
+            clockContainer.innerHTML = createFlapPanels(8);
 
             function updateClock() {
                 const timeStr = getUTCNow();
@@ -1062,7 +1063,7 @@
             }
 
             updateClock();
-            setInterval(updateClock, 5000);
+            setInterval(updateClock, 1000);
         }
 
         function generateRandomTime() {
