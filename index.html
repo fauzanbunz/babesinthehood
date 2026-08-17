@@ -10,6 +10,11 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;700&display=swap');
 
+        /* Memastikan elemen tidak melebar ke luar layar karena padding */
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
         body {
             background-color: #1a1a1a;
             background-image: url('https://raw.githubusercontent.com/fauzanbunz/babesinthehood/main/ChatGPT%20Image%2010%20Agu%202026%2C%2010.08.58.png');
@@ -864,11 +869,96 @@
             border-color: #ccff00 !important;
         }
 
+        /* --- PENYESUAIAN LAYAR TABLET & HP (RESPONSIF) --- */
         @media (max-width: 900px) {
-            .board-header-row, .board-row {
-                min-width: 800px;
+            /* 1. Flip Board Selaras Ke Bawah (Vertikal) */
+            .board-header-row {
+                display: none; /* Sembunyikan header horizontal */
             }
-            .header-title { font-size: 2.5rem; }
+            .board-row {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 1.5rem;
+                width: 100%;
+            }
+            .cell {
+                flex-wrap: wrap;
+                justify-content: center;
+                width: 100%;
+            }
+            /* Menambahkan kembali label teks di atas masing-masing kolom khusus di HP */
+            .cell::before {
+                width: 100%;
+                text-align: center;
+                color: #ccff00;
+                font-size: 1.2rem;
+                font-weight: 700;
+                letter-spacing: 2px;
+                margin-bottom: 5px;
+            }
+            #cell-time-0::before { content: 'TIME'; }
+            #cell-dest-0::before { content: 'DESTINATION'; }
+            #cell-flight-0::before { content: 'FLIGHT'; }
+            #cell-gate-0::before { content: 'GATE'; }
+            #cell-remark-0::before { content: 'REMARK'; }
+            
+            /* Jam UTC tetap dipertahankan format barisnya */
+            .utc-clock-container .cell { flex-wrap: nowrap; }
+            .utc-clock-container .cell::before { content: none !important; }
+
+            /* Menyesuaikan Header */
+            .header { flex-direction: column; gap: 15px; }
+            .header-title { font-size: 2.5rem; text-align: center; }
+            .utc-clock-container { width: 100%; justify-content: center; }
+            .board-container { overflow-x: hidden; padding: 1rem; }
+            
+            /* Ukuran Flap sedikit diperkecil */
+            .flap-panel { width: 22px; height: 32px; font-size: 18px; }
+
+            /* 2. Boarding Pass Penyesuaian Dasar */
+            .custom-ticket { flex-direction: column; border-radius: 10px; }
+            .ticket-left { border-right: none; border-bottom: 4px dotted #1a2a3a; flex: 1; padding: 20px; }
+            .ticket-right { flex: 1; padding: 20px; }
+            .custom-ticket::before, .custom-ticket::after { display: none; }
+            .band-lines { display: none; }
+            .details-grid { grid-template-columns: 1fr; gap: 15px; }
+            .t-band { margin: 0 -20px 15px -20px; padding: 10px 20px; }
+            .ticket-right .t-band { margin: 0 -20px 15px -20px; padding: 10px 20px; }
+        }
+
+        /* --- PENYESUAIAN EKSTREM UNTUK HP LAYAR KECIL --- */
+        @media (max-width: 500px) {
+            /* Flap Board Input jadi lebih kecil agar muat banyak karakter */
+            .flap-panel { width: 18px; height: 28px; font-size: 16px; }
+            .cell::before { font-size: 1rem; }
+            
+            /* Boarding Pass Pengecilan Skala Total */
+            .ticket-left, .ticket-right { padding: 15px 10px; }
+            .t-title { font-size: 1.2rem; }
+            .t-title svg { width: 20px; height: 20px; }
+            .t-logo-text { font-size: 0.8rem; }
+            .t-logo-lines { width: 40px; }
+            
+            .band-code { font-size: 1.8rem; }
+            .band-label { font-size: 0.7rem; }
+            .band-center-icon svg { width: 20px; height: 20px; }
+            
+            .t-band { margin: 0 -10px 15px -10px; padding: 10px; }
+            .ticket-right .t-band { margin: 0 -10px 15px -10px; padding: 10px; font-size: 1.5rem; }
+            
+            .d-label { font-size: 0.9rem; width: 80px; }
+            /* Word-break mencegah nama panjang mendorong layar ke samping (penyebab terpotong) */
+            .d-val { font-size: 0.9rem; word-break: break-all; } 
+            
+            .barcode-bars { width: 100%; max-width: 180px; }
+            .barcode-numbers { font-size: 0.8rem; }
+            
+            .stub-grid { grid-template-columns: 1fr; gap: 10px; }
+            .stub-grid .d-label { width: 80px; font-size: 0.8rem; }
+            .stub-grid .d-val { font-size: 0.8rem; word-break: break-all; }
+            
+            .t-title-right { font-size: 1.3rem; }
         }
     </style>
 </head>
