@@ -10,7 +10,6 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;700&display=swap');
 
-        /* Memastikan elemen tidak melebar ke luar layar karena padding */
         *, *::before, *::after {
             box-sizing: border-box;
         }
@@ -35,10 +34,7 @@
         body::before {
             content: '';
             position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
+            top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(0, 0, 0, 0.65);
             z-index: -1;
         }
@@ -53,8 +49,13 @@
             width: 100%;
             overflow-x: auto;
             backdrop-filter: blur(8px);
-            margin-bottom: 2rem; /* Add margin below board */
+            margin-bottom: 2rem;
+            z-index: 10;
         }
+
+        .board-container::-webkit-scrollbar { height: 8px; }
+        .board-container::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); border-radius: 4px; }
+        .board-container::-webkit-scrollbar-thumb { background: #ccff00; border-radius: 4px; }
 
         .header {
             display: flex;
@@ -65,10 +66,7 @@
             width: 100%;
         }
 
-        .header-left {
-            display: flex;
-            align-items: center;
-        }
+        .header-left { display: flex; align-items: center; }
 
         .utc-clock-container {
             display: flex;
@@ -80,11 +78,7 @@
             border: 1px solid #444;
         }
 
-        .utc-label {
-            font-size: 1.5rem;
-            font-weight: bold;
-            letter-spacing: 2px;
-        }
+        .utc-label { font-size: 1.5rem; font-weight: bold; letter-spacing: 2px; }
 
         .header-icon {
             font-size: 3rem;
@@ -98,17 +92,8 @@
             justify-content: center;
         }
         
-        .header-icon img {
-            width: 44px;
-            height: 44px;
-        }
-
-        .header-title {
-            font-size: 3.5rem;
-            font-weight: 700;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-        }
+        .header-icon img { width: 44px; height: 44px; }
+        .header-title { font-size: 3.5rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
 
         .board-header-row {
             display: grid;
@@ -128,10 +113,7 @@
             margin-bottom: 0.5rem;
         }
 
-        .cell {
-            display: flex;
-            gap: 3px;
-        }
+        .cell { display: flex; gap: 3px; }
 
         .flap-panel {
             width: 24px;
@@ -155,22 +137,13 @@
         .flap-panel::after {
             content: '';
             position: absolute;
-            top: 50%;
-            left: -1px;
-            right: -1px;
-            height: 1px;
+            top: 50%; left: -1px; right: -1px; height: 1px;
             background-color: rgba(0, 0, 0, 0.85);
             z-index: 10;
         }
         
-        .flap-panel .char {
-            opacity: 0;
-            transition: opacity 0.1s;
-        }
-        
-        .flap-panel.visible .char {
-            opacity: 1;
-        }
+        .flap-panel .char { opacity: 0; transition: opacity 0.05s; }
+        .flap-panel.visible .char { opacity: 1; }
 
         @keyframes flipDown {
             0% { transform: rotateX(0deg); opacity: 1; }
@@ -182,9 +155,7 @@
         .flap-panel.flipping::before {
             content: attr(data-char);
             position: absolute;
-            left: 0;
-            right: 0;
-            height: 50%;
+            left: 0; right: 0; height: 50%;
             background-color: #1a1a1a;
             color: #eee;
             display: flex;
@@ -192,7 +163,7 @@
             overflow: hidden;
             border-radius: 3px 3px 0 0;
             transform-origin: bottom;
-            animation: flipDown 0.25s linear; /* Animasi dipercepat */
+            animation: flipDown 0.1s linear; /* Cepat */
             z-index: 5;
             align-items: flex-end;
             padding-bottom: 0px;
@@ -202,250 +173,224 @@
         }
 
         .input-group {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin-bottom: 2rem;
-            width: 100%;
-            max-width: 800px;
+            display: flex; flex-direction: column; align-items: center;
+            margin-bottom: 2rem; width: 100%; max-width: 800px;
         }
 
         .input-label {
-            color: #fff;
-            font-size: 1.3rem;
-            margin-bottom: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 2px;
+            color: #fff; font-size: 1.3rem; margin-bottom: 0.8rem;
+            text-transform: uppercase; letter-spacing: 2px;
         }
 
         .flip-input-display {
-            display: flex;
-            gap: 3px;
-            flex-wrap: wrap;
-            justify-content: center;
-            margin-bottom: 10px;
-            cursor: pointer;
-            padding: 8px;
-            background: rgba(0,0,0,0.4);
-            border-radius: 6px;
-            border: 1px solid #444;
+            display: flex; gap: 3px; flex-wrap: wrap; justify-content: center;
+            margin-bottom: 10px; cursor: pointer; padding: 8px;
+            background: rgba(0,0,0,0.4); border-radius: 6px; border: 1px solid #444;
             transition: all 0.3s ease;
         }
 
         .hidden-real-input {
-            opacity: 0;
-            position: absolute;
-            z-index: -1;
-            pointer-events: none;
+            opacity: 0; position: absolute; z-index: -1; pointer-events: none;
         }
 
-        .claim-section {
+        .section-container {
             background-color: rgba(34, 34, 34, 0.88);
             border: 2px dashed #444;
             border-radius: 8px;
             padding: 2rem;
             text-align: center;
             width: 100%;
-            max-width: 600px;
+            max-width: 800px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.7);
             backdrop-filter: blur(8px);
+            z-index: 10;
         }
 
-        .claim-title {
-            color: #ccff00;
-            font-size: 2rem;
-            text-transform: uppercase;
-            margin-bottom: 1.5rem;
-            letter-spacing: 1px;
+        /* KHUSUS UNTUK MENYEMBUNYIKAN LAYER INFO PENUMPANG DI AWAL */
+        #passenger-info-screen {
+            display: none; /* Sembunyikan secara default */
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .section-title {
+            color: #ccff00; font-size: 2rem; text-transform: uppercase;
+            margin-bottom: 1.5rem; letter-spacing: 1px;
         }
 
         .claim-input {
-            width: 100%;
-            padding: 1rem;
-            font-size: 1.2rem;
-            background-color: rgba(17, 17, 17, 0.9);
-            border: 1px solid #444;
-            color: #fff;
-            border-radius: 6px;
-            margin-bottom: 1rem;
-            font-family: 'Oswald', sans-serif;
-            text-align: center;
-            text-transform: uppercase;
+            width: 100%; max-width: 500px; padding: 1rem; font-size: 1.2rem;
+            background-color: rgba(17, 17, 17, 0.9); border: 1px solid #444;
+            color: #fff; border-radius: 6px; margin-bottom: 1rem;
+            font-family: 'Oswald', sans-serif; text-align: center; text-transform: uppercase;
         }
         
-        .claim-input:focus {
-            outline: none;
-            border-color: #ccff00;
-            box-shadow: 0 0 8px rgba(204, 255, 0, 0.4);
+        .claim-input:focus { outline: none; border-color: #ccff00; box-shadow: 0 0 8px rgba(204, 255, 0, 0.4); }
+
+        .action-btn {
+            background-color: #ccff00; color: #111; border: none; padding: 1rem 2rem;
+            font-size: 1.2rem; font-weight: bold; text-transform: uppercase;
+            cursor: pointer; border-radius: 6px; transition: all 0.2s;
+            width: 100%; max-width: 500px;
         }
 
-        .claim-btn {
-            background-color: #ccff00;
-            color: #111;
-            border: none;
-            padding: 1rem 2rem;
-            font-size: 1.2rem;
-            font-weight: bold;
-            text-transform: uppercase;
-            cursor: pointer;
-            border-radius: 6px;
-            transition: all 0.2s;
-            width: 100%;
-        }
-
-        .claim-btn:hover {
-            background-color: #d4ff33; 
-            transform: translateY(-2px);
+        .action-btn:hover {
+            background-color: #d4ff33; transform: translateY(-2px);
             box-shadow: 0 4px 10px rgba(204, 255, 0, 0.4);
         }
 
         #message-box {
-            display: none;
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: #4CAF50;
-            color: white;
-            padding: 15px 30px;
-            border-radius: 5px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.4);
-            z-index: 4000;
-            font-size: 1.2rem;
-            animation: slideDown 0.3s ease-out;
+            display: none; position: fixed; top: 20px; left: 50%;
+            transform: translateX(-50%); background-color: #4CAF50; color: white;
+            padding: 15px 30px; border-radius: 5px; box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+            z-index: 4000; font-size: 1.2rem; animation: slideDown 0.3s ease-out;
         }
-        
-        #message-box.error {
-            background-color: #f44336;
-        }
-
-        @keyframes slideDown {
-            from { top: -50px; opacity: 0; }
-            to { top: 20px; opacity: 1; }
-        }
+        #message-box.error { background-color: #f44336; }
+        @keyframes slideDown { from { top: -50px; opacity: 0; } to { top: 20px; opacity: 1; } }
 
         #anti-bot-screen {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background-color: rgba(26, 26, 26, 0.95);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 5000;
-            backdrop-filter: blur(10px);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 5000; backdrop-filter: blur(10px);
         }
 
         .captcha-wrapper {
-            width: 100%;
-            max-width: 320px;
-            margin: 20px auto;
-            font-family: 'Courier New', Courier, monospace;
-            text-align: center;
-            border: 3px solid #000;
-            padding: 10px;
-            background-color: #fff;
-            box-shadow: 4px 4px 0px #000;
+            width: 100%; max-width: 320px; margin: 20px auto;
+            font-family: 'Courier New', Courier, monospace; text-align: center;
+            border: 3px solid #000; padding: 10px; background-color: #fff;
+            box-shadow: 4px 4px 0px #000; box-sizing: border-box;
         }
 
         .game-area {
-            width: 100%;
-            height: 200px;
-            background: linear-gradient(to bottom, #87CEEB 60%, #EED6AF 40%);
-            position: relative;
-            overflow: hidden;
-            border: 2px solid #000;
-            cursor: crosshair;
-            touch-action: none; 
+            width: 100%; height: 200px; background: linear-gradient(to bottom, #87CEEB 60%, #EED6AF 40%);
+            position: relative; overflow: hidden; border: 2px solid #000;
+            cursor: crosshair; touch-action: none; 
         }
 
-        #coconut {
-            position: absolute;
-            font-size: 28px;
-            top: -30px;
-            left: 50%;
-            user-select: none;
-            z-index: 2;
-        }
+        #coconut { position: absolute; font-size: 28px; top: -30px; left: 50%; user-select: none; z-index: 2; }
+        #basket { position: absolute; font-size: 35px; bottom: 5px; left: 50%; transform: translateX(-50%); user-select: none; z-index: 3; transition: transform 0.05s ease; }
+        .status-text { margin-top: 15px; font-weight: bold; font-size: 14px; color: #333; }
+        .success-text { color: #008000; }
 
-        #basket {
-            position: absolute;
-            font-size: 35px;
-            bottom: 5px;
-            left: 50%;
-            transform: translateX(-50%);
-            user-select: none;
-            z-index: 3;
-            transition: transform 0.05s ease;
-        }
-
-        .status-text {
-            margin-top: 15px;
-            font-weight: bold;
-            font-size: 14px;
-            color: #333;
-        }
-
-        .success-text {
-            color: #008000;
-        }
-
-        /* Tampilan Overlay Tombol Start untuk Game Anti-Bot */
         #game-start-overlay {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0, 0, 0, 0.8);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 10;
-            flex-direction: column;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.8); display: flex; justify-content: center;
+            align-items: center; z-index: 10; flex-direction: column;
         }
         
         #game-start-overlay button {
-            background-color: #ccff00;
-            color: #000;
-            border: 2px solid #000;
-            padding: 10px 20px;
-            font-size: 1.2rem;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 2px 2px 0 #000;
+            background-color: #ccff00; color: #000; border: 2px solid #000; padding: 10px 20px;
+            font-size: 1.2rem; font-weight: bold; cursor: pointer; box-shadow: 2px 2px 0 #000;
             font-family: 'Courier New', Courier, monospace;
         }
-        
-        #game-start-overlay button:hover {
-            background-color: #d4ff33;
-            transform: translate(-1px, -1px);
-            box-shadow: 3px 3px 0 #000;
+        #game-start-overlay button:hover { background-color: #d4ff33; transform: translate(-1px, -1px); box-shadow: 3px 3px 0 #000; }
+
+        #boarding-pass-modal {
+            display: none; /* Sembunyikan secara default */
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.9); z-index: 9999;
+            justify-content: center; align-items: center; flex-direction: column;
+            overflow-y: auto; padding: 20px;
         }
 
-        /* --- PENYESUAIAN LAYAR TABLET & HP (RESPONSIF) --- */
-        @media (max-width: 900px) {
-            /* 1. Flip Board Selaras Ke Bawah (Vertikal) */
-            .board-header-row {
-                display: none; /* Sembunyikan header horizontal */
-            }
+        .pass-container {
+            display: flex; flex-direction: column; align-items: center;
+            position: relative; max-width: 900px; width: 100%;
+        }
+
+        .close-pass-btn {
+            position: absolute; top: -40px; right: 0; font-size: 3rem; color: #fff;
+            cursor: pointer; z-index: 100; transition: color 0.2s; line-height: 1;
+        }
+        .close-pass-btn:hover { color: #ccff00; }
+
+        #success-msg {
+            color: #ccff00; font-size: 2.5rem; font-weight: bold; margin-bottom: 20px;
+            text-transform: uppercase; text-shadow: 0 0 10px rgba(204, 255, 0, 0.5);
+            text-align: center;
+        }
+
+        #svg-pass-wrapper { width: 100%; display: flex; justify-content: center; }
+
+        .pure-html-ticket {
+            display: flex; background-color: #ccff00; border-radius: 12px;
+            overflow: hidden; font-family: 'Oswald', sans-serif; color: #1a2a3a;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.8); position: relative; width: 100%; max-width: 850px;
+        }
+        
+        .pure-html-ticket::before, .pure-html-ticket::after {
+            content: ''; position: absolute; width: 30px; height: 30px;
+            background-color: #1a1a1a; border-radius: 50%;
+            left: calc(70% - 15px); z-index: 10;
+        }
+        .pure-html-ticket::before { top: -15px; }
+        .pure-html-ticket::after { bottom: -15px; }
+
+        .ticket-left-section { flex: 0 0 70%; padding: 20px; border-right: 3px dashed #1a2a3a; display: flex; flex-direction: column; position: relative; }
+        .ticket-right-section { flex: 0 0 30%; padding: 20px; display: flex; flex-direction: column; position: relative; }
+
+        .t-header-top { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #1a2a3a; padding-bottom: 10px; margin-bottom: 15px; }
+        .t-brand { display: flex; align-items: center; gap: 10px; font-weight: bold; font-size: 1.2rem; }
+        .t-brand-lines { display: flex; flex-direction: column; gap: 2px; }
+        .t-brand-lines span { width: 30px; height: 2px; background-color: #1a2a3a; }
+        .t-type { font-size: 1.8rem; font-weight: bold; display: flex; align-items: center; gap: 10px; }
+        .t-type svg { width: 30px; height: 30px; fill: #1a2a3a; transform: rotate(45deg); }
+
+        .t-flight-band { background-color: #1a2a3a; color: #ccff00; padding: 15px 20px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .band-code-group { display: flex; flex-direction: column; }
+        .b-code { font-size: 4rem; font-weight: bold; line-height: 1; }
+        .b-city { font-size: 1rem; text-transform: uppercase; }
+        .band-center { display: flex; align-items: center; gap: 15px; flex: 1; justify-content: center; }
+        .band-line { flex: 1; height: 2px; background-color: #ccff00; max-width: 100px; }
+        .band-center svg { width: 40px; height: 40px; fill: #ccff00; transform: rotate(90deg); }
+
+        .t-details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; flex-grow: 1; z-index: 2; }
+        .detail-box { display: flex; flex-direction: column; }
+        .detail-label { font-size: 1.1rem; font-weight: bold; text-transform: uppercase; }
+        .detail-value { font-size: 1.4rem; font-weight: 500; text-transform: uppercase; word-break: break-all; }
+
+        .t-barcode-area { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 20px; }
+        .barcode-visual { font-family: 'Courier New', Courier, monospace; font-size: 0.9rem; }
+        .barcode-bars { height: 40px; background-image: repeating-linear-gradient(to right, #1a2a3a 0, #1a2a3a 2px, transparent 2px, transparent 4px, #1a2a3a 4px, #1a2a3a 8px, transparent 8px, transparent 10px); margin-bottom: 5px; width: 250px; }
+        
+        .t-right-title { font-size: 1.8rem; font-weight: bold; text-align: center; margin-bottom: 15px; }
+        .t-right-band { background-color: #1a2a3a; color: #ccff00; font-size: 2rem; font-weight: bold; text-align: center; padding: 10px; border-radius: 8px; margin-bottom: 20px; }
+        .t-right-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: auto; }
+        .t-right-barcode { margin-top: 20px; align-self: center; transform: scale(0.8); }
+
+        .watermark-map { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -40%); width: 80%; opacity: 0.1; z-index: 1; pointer-events: none; }
+
+        .modal-actions {
+            display: flex; flex-direction: column; align-items: center;
+            background-color: rgba(17, 17, 17, 0.9); padding: 20px;
+            border-radius: 8px; border: 1px solid #444; margin-top: 20px; width: 100%; max-width: 600px;
+        }
+        .validation-instruction { color: #fff; font-size: 1.2rem; margin-bottom: 15px; text-align: center; }
+        .action-buttons { display: flex; gap: 15px; width: 100%; justify-content: center; }
+        .share-btn { background-color: #000; color: #fff; border: 1px solid #333; }
+        .share-btn:hover { background-color: #222; }
+
+        @media (max-width: 1024px) {
+            .board-header-row, .board-row { width: max-content; }
+        }
+
+        @media (max-width: 850px) {
+            /* Board adjustments */
+            .header { flex-direction: column; gap: 15px; }
+            .header-title { font-size: 2.5rem; text-align: center; }
+            .utc-clock-container { width: 100%; justify-content: center; }
+            .board-header-row { display: none; } /* Hide horizontal headers */
+            
+            /* Stack board vertically */
             .board-row {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                gap: 1.5rem;
-                width: 100%;
+                display: flex; flex-direction: column; align-items: center;
+                gap: 1.5rem; width: 100%; margin: 0 auto;
             }
-            .cell {
-                flex-wrap: wrap;
-                justify-content: center;
-                width: 100%;
-            }
-            /* Menambahkan kembali label teks di atas masing-masing kolom khusus di HP */
+            .cell { flex-wrap: wrap; justify-content: center; width: 100%; }
             .cell::before {
-                width: 100%;
-                text-align: center;
-                color: #ccff00;
-                font-size: 1.2rem;
-                font-weight: 700;
-                letter-spacing: 2px;
-                margin-bottom: 5px;
+                width: 100%; text-align: center; color: #ccff00;
+                font-size: 1.2rem; font-weight: 700; letter-spacing: 2px; margin-bottom: 5px;
             }
             #cell-time-0::before { content: 'TIME'; }
             #cell-dest-0::before { content: 'DESTINATION'; }
@@ -453,62 +398,31 @@
             #cell-gate-0::before { content: 'GATE'; }
             #cell-remark-0::before { content: 'REMARK'; }
             
-            /* Jam UTC tetap dipertahankan format barisnya */
+            /* Preserve UTC layout */
             .utc-clock-container .cell { flex-wrap: nowrap; }
             .utc-clock-container .cell::before { content: none !important; }
 
-            /* Menyesuaikan Header */
-            .header { flex-direction: column; gap: 15px; }
-            .header-title { font-size: 2.5rem; text-align: center; }
-            .utc-clock-container { width: 100%; justify-content: center; }
-            .board-container { overflow-x: hidden; padding: 1rem; }
+            /* Ticket adjustments for mobile */
+            .pure-html-ticket { flex-direction: column; max-width: 400px; }
+            .ticket-left-section { border-right: none; border-bottom: 3px dashed #1a2a3a; padding: 15px; }
+            .ticket-right-section { padding: 15px; }
+            .pure-html-ticket::before, .pure-html-ticket::after { display: none; }
             
-            /* Ukuran Flap sedikit diperkecil */
-            .flap-panel { width: 22px; height: 32px; font-size: 18px; }
-
-            /* 2. Boarding Pass Penyesuaian Dasar */
-            .custom-ticket { flex-direction: column; border-radius: 10px; }
-            .ticket-left { border-right: none; border-bottom: 4px dotted #1a2a3a; flex: 1; padding: 20px; }
-            .ticket-right { flex: 1; padding: 20px; }
-            .custom-ticket::before, .custom-ticket::after { display: none; }
-            .band-lines { display: none; }
-            .details-grid { grid-template-columns: 1fr; gap: 15px; }
-            .t-band { margin: 0 -20px 15px -20px; padding: 10px 20px; }
-            .ticket-right .t-band { margin: 0 -20px 15px -20px; padding: 10px 20px; }
+            .t-type span { display: none; } /* hide 'BOARDING PASS' text to save space */
+            .b-code { font-size: 2.5rem; }
+            .band-center svg { width: 25px; height: 25px; }
+            .detail-label { font-size: 0.9rem; }
+            .detail-value { font-size: 1.1rem; }
+            .t-right-title { font-size: 1.4rem; }
+            .t-right-band { font-size: 1.5rem; }
+            #success-msg { font-size: 1.5rem; }
+            .action-buttons { flex-direction: column; }
         }
 
-        /* --- PENYESUAIAN EKSTREM UNTUK HP LAYAR KECIL --- */
-        @media (max-width: 500px) {
-            /* Flap Board Input jadi lebih kecil agar muat banyak karakter */
+        @media (max-width: 450px) {
             .flap-panel { width: 18px; height: 28px; font-size: 16px; }
-            .cell::before { font-size: 1rem; }
-            
-            /* Boarding Pass Pengecilan Skala Total */
-            .ticket-left, .ticket-right { padding: 15px 10px; }
-            .t-title { font-size: 1.2rem; }
-            .t-title svg { width: 20px; height: 20px; }
-            .t-logo-text { font-size: 0.8rem; }
-            .t-logo-lines { width: 40px; }
-            
-            .band-code { font-size: 1.8rem; }
-            .band-label { font-size: 0.7rem; }
-            .band-center-icon svg { width: 20px; height: 20px; }
-            
-            .t-band { margin: 0 -10px 15px -10px; padding: 10px; }
-            .ticket-right .t-band { margin: 0 -10px 15px -10px; padding: 10px; font-size: 1.5rem; }
-            
-            .d-label { font-size: 0.9rem; width: 80px; }
-            /* Word-break mencegah nama panjang mendorong layar ke samping (penyebab terpotong) */
-            .d-val { font-size: 0.9rem; word-break: break-all; } 
-            
-            .barcode-bars { width: 100%; max-width: 180px; }
-            .barcode-numbers { font-size: 0.8rem; }
-            
-            .stub-grid { grid-template-columns: 1fr; gap: 10px; }
-            .stub-grid .d-label { width: 80px; font-size: 0.8rem; }
-            .stub-grid .d-val { font-size: 0.8rem; word-break: break-all; }
-            
-            .t-title-right { font-size: 1.3rem; }
+            .claim-title, .section-title { font-size: 1.5rem; }
+            .t-details-grid { grid-template-columns: 1fr; gap: 10px; }
         }
     </style>
 </head>
@@ -562,16 +476,16 @@
         </div>
     </div>
 
-    <div class="claim-section">
-        <div class="claim-title">Claim Your Boarding Pass</div>
+    <div class="section-container" id="claim-section">
+        <div class="section-title">Claim Your Boarding Pass</div>
         <input type="text" id="ticket-input" class="claim-input" placeholder="ENTER TICKET CODE" autocomplete="off">
-        <button id="claim-btn" class="claim-btn">Claim Pass</button>
+        <button id="claim-btn" class="action-btn">Claim Pass</button>
         <div id="claim-status-text" style="color: #f44336; margin-top: 10px; font-weight: bold; min-height: 24px;"></div>
     </div>
 
-    <div id="passenger-info-screen">
-        <h1 class="landing-title">Ticket Validated!</h1>
-        <p style="color: #fff; font-size: 1.2rem; margin-bottom: 2rem; letter-spacing: 1px;">PLEASE ENTER PASSENGER INFORMATION</p>
+    <div class="section-container" id="passenger-info-screen">
+        <div class="section-title" style="color: #fff;">Ticket Validated!</div>
+        <p style="color: #ccff00; font-size: 1.2rem; margin-bottom: 2rem; letter-spacing: 1px;">PLEASE ENTER PASSENGER INFORMATION</p>
         
         <div class="input-group">
             <div class="input-label">Enter Twitter / X Username</div>
@@ -589,7 +503,7 @@
             <input type="text" id="wallet-input" class="hidden-real-input" maxlength="50" autocomplete="off">
         </div>
 
-        <button id="start-btn" class="start-btn" style="display: none;">Generate Boarding Pass</button>
+        <button id="start-btn" class="action-btn" style="display: none; max-width: 300px;">ISSUE BOARDING PASS</button>
     </div>
 
     <div id="message-box"></div>
@@ -599,7 +513,7 @@
             <span class="close-pass-btn" id="close-modal-btn">&times;</span>
             <div id="success-msg">Congratulations, you are on the list!</div>
             <div id="svg-pass-wrapper">
-                <!-- Ticket will be injected here -->
+                <!-- Pure HTML Ticket will be injected here -->
             </div>
             
             <div class="modal-actions" id="modal-actions" style="display: none;">
@@ -613,45 +527,33 @@
     </div>
 
     <script>
+        const GOOGLE_SHEET_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzYki2gR4JW4nauX62tDL-JDKx1g3Hk4K2dWxEaGH2_nBZm-7INKPAKMUHR-9wNaDOQ6Q/exec";
+
         const MAX_ROWS = 1; 
         let claimCount = 1; 
         let isAnimating = false;
         let currentRemarkIndex = 0;
 
-        // URL Google Apps Script Web App Anda
-        const GOOGLE_SHEET_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzYki2gR4JW4nauX62tDL-JDKx1g3Hk4K2dWxEaGH2_nBZm-7INKPAKMUHR-9wNaDOQ6Q/exec";
-
-        // Variabel untuk menyimpan data sementara
         let pendingTicketCode = "";
         let pendingFlightNum = "";
         let pendingGateNum = "";
         let pendingSeatStr = "";
 
-        // Mock Ticket Database
         const TICKET_CODES = {
             "EARLYBIRD": { capacity: 20, claimed: 0 },
             "VIPACCESS": { capacity: 5, claimed: 5 },
             "BABES2026": { capacity: 100, claimed: 12 }
         };
 
-        let userData = {
-            twitter: "",
-            wallet: ""
-        };
+        let userData = { twitter: "", wallet: "" };
 
-        const COL_LENGTHS = {
-            time: 5,         // HH:MM
-            destination: 12, // BABES ISLAND
-            flight: 6,       // RB001
-            gate: 3,         // A12
-            remark: 9        // BOARDING 
-        };
-
+        const COL_LENGTHS = { time: 5, destination: 12, flight: 6, gate: 3, remark: 9 };
         const REMARKS = ["BOARDING ", "ON TIME  ", "DELAYED  "];
         const TWITTER_MAX = 15;
         const WALLET_MAX = 50; 
 
-        const airplaneIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M497.9 142.1l-46.1 46.1c-4.7 4.7-11.6 6.5-18.1 4.7l-99.3-27.1-137.9 137.9 83.2 83.2c5.6 5.6 7.7 13.9 5.5 21.6l-20.9 73.1c-3.1 11-14.7 16.7-25.5 12.6l-85.1-32.3-59 59c-9.4 9.4-24.6 9.4-33.9 0l-17-17c-9.4-9.4-9.4-24.6 0-33.9l59-59-32.3-85.1c-4.1-10.8 1.6-22.4 12.6-25.5l73.1-20.9c7.7-2.2 16 0 21.6 5.5l83.2 83.2 137.9-137.9-27.1-99.3c-1.8-6.5 0-13.4 4.7-18.1l46.1-46.1c18.7-18.7 49.1-18.7 67.9 0l17 17c18.8 18.7 18.8 49.1 0 67.9z"/></svg>`;
+        const planeSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M497.9 142.1l-46.1 46.1c-4.7 4.7-11.6 6.5-18.1 4.7l-99.3-27.1-137.9 137.9 83.2 83.2c5.6 5.6 7.7 13.9 5.5 21.6l-20.9 73.1c-3.1 11-14.7 16.7-25.5 12.6l-85.1-32.3-59 59c-9.4 9.4-24.6 9.4-33.9 0l-17-17c-9.4-9.4-9.4-24.6 0-33.9l59-59-32.3-85.1c-4.1-10.8 1.6-22.4 12.6-25.5l73.1-20.9c7.7-2.2 16 0 21.6 5.5l83.2 83.2 137.9-137.9-27.1-99.3c-1.8-6.5 0-13.4 4.7-18.1l46.1-46.1c18.7-18.7 49.1-18.7 67.9 0l17 17c18.8 18.7 18.8 49.1 0 67.9z"/></svg>`;
+        const worldMapSvg = `<svg class="watermark-map" viewBox="0 0 1000 500" fill="#1a2a3a"><path d="M100 250c0-50 40-100 100-100s150 20 200 50 80 120 150 120 150-50 200-100 80-50 100 0-30 150-100 150-150-50-200-100-100-80-150-80-200 40-200 100-40 20-40 20-60-110-60-160z"/><path d="M700 150c20-30 60-50 100-30s50 80 20 100-80 0-100-30-20-40-20-40z"/><path d="M300 400c20 30 70 40 100 10s40-70 10-90-80 20-100 40-20 40-10 40z"/></svg>`;
 
         function createFlapPanels(count) {
             let html = '';
@@ -665,7 +567,6 @@
             const container = document.getElementById('board-rows-container');
             if (!container) return;
             container.innerHTML = '';
-            
             for (let r = 0; r < MAX_ROWS; r++) {
                 const row = document.createElement('div');
                 row.className = 'board-row';
@@ -691,23 +592,20 @@
         function startUTCClock() {
             const clockContainer = document.getElementById('utc-clock');
             if (!clockContainer) return;
-            clockContainer.innerHTML = createFlapPanels(8);
+            clockContainer.innerHTML = createFlapPanels(8); // HH:MM:SS
 
-            function updateClock() {
+            setInterval(() => {
                 const timeStr = getUTCNow();
                 const panels = clockContainer.querySelectorAll('.flap-panel');
                 for (let i = 0; i < panels.length; i++) {
                     if (panels[i]) {
                         const charSpan = panels[i].querySelector('.char');
                         if (charSpan && charSpan.textContent !== timeStr[i]) {
-                            flipPanel(panels[i], timeStr[i]);
+                            flipPanel(panels[i], timeStr[i], true); // true = super fast flip for clock
                         }
                     }
                 }
-            }
-
-            updateClock();
-            setInterval(updateClock, 1000);
+            }, 1000);
         }
 
         function generateRandomTime() {
@@ -723,35 +621,31 @@
             return `${randomLetter}${randomNum}`;
         }
 
-        function formatFlight(count) {
-            return `RB${String(count).padStart(3, '0')} `;
-        }
+        function formatFlight(count) { return `RB${String(count).padStart(3, '0')} `; }
 
-        async function flipPanel(panelElement, targetChar) {
+        async function flipPanel(panelElement, targetChar, isClock = false) {
             return new Promise(resolve => {
                 const charSpan = panelElement.querySelector('.char');
                 const currentChar = charSpan.textContent || ' ';
 
-                if (currentChar === targetChar) {
-                    resolve();
-                    return;
-                }
+                if (currentChar === targetChar) { resolve(); return; }
 
                 panelElement.setAttribute('data-char', currentChar);
                 panelElement.classList.add('flipping');
                 charSpan.style.opacity = '0';
+                
+                const halfTime = isClock ? 20 : 50; 
+                const fullTime = isClock ? 40 : 100;
 
-                // Timing dipercepat
                 setTimeout(() => {
                     charSpan.textContent = targetChar;
                     charSpan.style.opacity = '1';
                     panelElement.classList.add('visible');
-
                     setTimeout(() => {
                         panelElement.classList.remove('flipping');
                         resolve();
-                    }, 125); // Penundaan akhir panel flip dipercepat
-                }, 125); // Titik tengah flip dipercepat
+                    }, halfTime);
+                }, halfTime);
             });
         }
 
@@ -763,7 +657,7 @@
 
             for (let i = 0; i < panels.length; i++) {
                 await flipPanel(panels[i], paddedStr[i]);
-                await new Promise(r => setTimeout(r, 50)); // Jeda antar huruf dipercepat (efek ngetik lebih cepat)
+                await new Promise(r => setTimeout(r, 20)); // Delay ngetik cepat
             }
         }
 
@@ -771,10 +665,9 @@
             const cell = document.getElementById(cellId);
             if (!cell) return;
             const panels = cell.querySelectorAll('.flap-panel');
-
             for (let i = 0; i < panels.length; i++) {
                 await flipPanel(panels[i], ' ');
-                await new Promise(r => setTimeout(r, 30)); // Jeda pembersihan dipercepat
+                await new Promise(r => setTimeout(r, 10)); // Pembersihan cepat
             }
         }
 
@@ -784,20 +677,15 @@
 
             while (true) {
                 const rIndex = 0;
-                const timeVal = generateRandomTime();
-                const destVal = "BABES ISLAND";
-                const flightVal = formatFlight(claimCount);
-                const gateVal = generateRandomGate();
-                const remarkVal = REMARKS[currentRemarkIndex % REMARKS.length];
+                await animateCellString(`cell-time-${rIndex}`, generateRandomTime());
+                await animateCellString(`cell-dest-${rIndex}`, "BABES ISLAND");
+                await animateCellString(`cell-flight-${rIndex}`, formatFlight(claimCount));
+                await animateCellString(`cell-gate-${rIndex}`, generateRandomGate());
+                await animateCellString(`cell-remark-${rIndex}`, REMARKS[currentRemarkIndex % REMARKS.length]);
+                
                 currentRemarkIndex++;
 
-                await animateCellString(`cell-time-${rIndex}`, timeVal);
-                await animateCellString(`cell-dest-${rIndex}`, destVal);
-                await animateCellString(`cell-flight-${rIndex}`, flightVal);
-                await animateCellString(`cell-gate-${rIndex}`, gateVal);
-                await animateCellString(`cell-remark-${rIndex}`, remarkVal);
-
-                await new Promise(res => setTimeout(res, 3500));
+                await new Promise(res => setTimeout(res, 4000)); // Diam sejenak agar bisa dibaca
 
                 await clearCellString(`cell-remark-${rIndex}`);
                 await clearCellString(`cell-gate-${rIndex}`);
@@ -805,7 +693,7 @@
                 await clearCellString(`cell-dest-${rIndex}`);
                 await clearCellString(`cell-time-${rIndex}`);
 
-                await new Promise(res => setTimeout(res, 800));
+                await new Promise(res => setTimeout(res, 500));
             }
         }
 
@@ -814,7 +702,7 @@
             const walDisplay = document.getElementById('wallet-display');
             
             if (twitDisplay) {
-                twitDisplay.innerHTML = `<div class="flap-panel static-flap"><span class="char" style="opacity: 1;">@</span></div>` + createFlapPanels(TWITTER_MAX);
+                twitDisplay.innerHTML = `<div class="flap-panel static-flap"><span class="char" style="opacity: 1; color: #ccff00;">@</span></div>` + createFlapPanels(TWITTER_MAX);
             }
             if (walDisplay) {
                 walDisplay.innerHTML = createFlapPanels(WALLET_MAX);
@@ -837,7 +725,6 @@
                     }
                 }
             }
-
             checkStartButtonVisibility();
         }
 
@@ -861,36 +748,24 @@
             box.textContent = msg;
             box.className = type === 'error' ? 'error' : '';
             box.style.display = 'block';
-            setTimeout(() => {
-                box.style.display = 'none';
-            }, 3000);
+            setTimeout(() => box.style.display = 'none', 3000);
         }
 
         async function sendDataToSpreadsheet() {
-            if (GOOGLE_SHEET_WEBAPP_URL === "TARUH_URL_GOOGLE_APPS_SCRIPT_ANDA_DISINI") {
-                console.log("URL Spreadsheet belum diisi. Melanjutkan tanpa menyimpan...");
-                return;
-            }
-
-            // HANYA MENGIRIMKAN NAMA TWITTER DAN EVM WALLET SESUAI PERMINTAAN
             const dataToSave = {
                 twitter: "@" + userData.twitter,
                 wallet: userData.wallet
             };
-
             try {
+                // Menggunakan mode no-cors agar tidak di blokir browser
                 await fetch(GOOGLE_SHEET_WEBAPP_URL, {
                     method: "POST",
                     mode: "no-cors",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
+                    headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(dataToSave)
                 });
-                console.log("Data (Twitter & Wallet) berhasil dikirim ke antrean spreadsheet.");
-            } catch (error) {
-                console.error("Gagal menyimpan data:", error);
-            }
+                console.log("Data Sent to Sheets.");
+            } catch (error) { console.error("Sheet Error:", error); }
         }
 
         async function generateBoardingPass() {
@@ -898,138 +773,114 @@
             const actionsContainer = document.getElementById('modal-actions');
             actionsContainer.style.display = 'none'; 
             
-            const flightNum = pendingFlightNum;
-            const gateNum = pendingGateNum;
-            
             const d = new Date();
             const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
             const dateStr = `${String(d.getUTCDate()).padStart(2, '0')} ${months[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
             const timeStr = getUTCNow() + " UTC";
-
-            const seatStr = pendingSeatStr;
-            const passengerName = userData.twitter ? "@" + userData.twitter : "@PASSENGER";
+            const passengerName = "@" + userData.twitter;
 
             wrapper.innerHTML = `
-                <div class="custom-ticket" id="the-ticket-wrapper">
-                    <!-- MAIN LEFT TICKET -->
-                    <div class="ticket-left">
-                        <div class="t-top">
-                            <div class="t-logo-area">
-                                <div class="t-logo-lines"></div>
-                                <div class="t-logo-text">BABES AIR WAYS</div>
+                <div class="pure-html-ticket" id="the-ticket-wrapper">
+                    ${worldMapSvg}
+                    
+                    <div class="ticket-left-section">
+                        <div class="t-header-top">
+                            <div class="t-brand">
+                                <div class="t-brand-lines"><span></span><span></span><span></span></div>
+                                BABES AIR WAYS
                             </div>
-                            <div class="t-title">
-                                ${airplaneIcon} BOARDING PASS
+                            <div class="t-type">${planeSvg} <span>BOARDING PASS</span></div>
+                        </div>
+
+                        <div class="t-flight-band">
+                            <div class="band-code-group">
+                                <span class="b-city" style="color: #ccff00;">ROBINHOOD</span>
+                                <span class="b-code">RBH</span>
+                            </div>
+                            <div class="band-center">
+                                <div class="band-line"></div>
+                                ${planeSvg}
+                                <div class="band-line"></div>
+                            </div>
+                            <div class="band-code-group" style="text-align: right;">
+                                <span class="b-city" style="color: #ccff00;">BABES ISLAND</span>
+                                <span class="b-code">BSI</span>
                             </div>
                         </div>
 
-                        <div class="t-band">
-                            <div class="band-group">
-                                <span class="band-label">ROBINHOOD</span>
-                                <span class="band-code">RBH</span>
+                        <div class="t-details-grid">
+                            <div class="detail-box">
+                                <span class="detail-label">NAME:</span>
+                                <span class="detail-value">${passengerName}</span>
                             </div>
-                            <div class="band-center-icon">
-                                <div class="band-lines"><span></span><span></span><span></span></div>
-                                ${airplaneIcon}
+                            <div class="detail-box">
+                                <span class="detail-label">FLIGHT:</span>
+                                <span class="detail-value">${pendingFlightNum}</span>
                             </div>
-                            <div class="band-group">
-                                <span class="band-code">BSI</span>
-                                <span class="band-label">BABES ISLAND</span>
+                            <div class="detail-box">
+                                <span class="detail-label">DATE:</span>
+                                <span class="detail-value">${dateStr}</span>
+                            </div>
+                            <div class="detail-box">
+                                <span class="detail-label">GATE:</span>
+                                <span class="detail-value">${pendingGateNum}</span>
+                            </div>
+                            <div class="detail-box">
+                                <span class="detail-label">BOARDING:</span>
+                                <span class="detail-value">${timeStr}</span>
+                            </div>
+                            <div class="detail-box">
+                                <span class="detail-label">SEAT:</span>
+                                <span class="detail-value">${pendingSeatStr}</span>
                             </div>
                         </div>
 
-                        <div class="t-body">
-                            <!-- Simple SVG map overlay -->
-                            <svg class="map-bg" viewBox="0 0 1000 500" fill="#1a2a3a">
-                                <path d="M100 250c0-50 40-100 100-100s150 20 200 50 80 120 150 120 150-50 200-100 80-50 100 0-30 150-100 150-150-50-200-100-100-80-150-80-200 40-200 100-40 20-40 20-60-110-60-160z"/>
-                                <path d="M700 150c20-30 60-50 100-30s50 80 20 100-80 0-100-30-20-40-20-40z"/>
-                                <path d="M300 400c20 30 70 40 100 10s40-70 10-90-80 20-100 40-20 40-10 40z"/>
-                            </svg>
-
-                            <div class="details-grid">
-                                <!-- Column 1 -->
-                                <div>
-                                    <div class="d-item">
-                                        <span class="d-label">NAME:</span>
-                                        <span class="d-val">${passengerName}</span>
-                                    </div>
-                                    <div class="d-item" style="margin-top: 15px;">
-                                        <span class="d-label">DATE:</span>
-                                        <span class="d-val">${dateStr}</span>
-                                    </div>
-                                    <div class="d-item" style="margin-top: 15px;">
-                                        <span class="d-label">BOARDING:</span>
-                                        <span class="d-val">${timeStr}</span>
-                                    </div>
-                                </div>
-                                <!-- Column 2 -->
-                                <div>
-                                    <div class="d-item">
-                                        <span class="d-label">FLIGHT:</span>
-                                        <span class="d-val">${flightNum}</span>
-                                    </div>
-                                    <div class="d-item" style="margin-top: 15px;">
-                                        <span class="d-label">GATE:</span>
-                                        <span class="d-val">${gateNum}</span>
-                                    </div>
-                                    <div class="d-item" style="margin-top: 15px;">
-                                        <span class="d-label">SEAT:</span>
-                                        <span class="d-val">${seatStr}</span>
-                                    </div>
-                                </div>
+                        <div class="t-barcode-area">
+                            <div class="barcode-visual">
+                                <div class="barcode-bars"></div>
+                                0 734664 235788
                             </div>
-
-                            <div class="t-footer">
-                                <div class="barcode-container">
-                                    <div class="barcode-bars"></div>
-                                    <div class="barcode-numbers">0 734664 235788</div>
-                                </div>
-                                <div class="footer-logo">BABES AIR WAYS ${airplaneIcon}</div>
-                            </div>
+                            <div class="t-brand" style="font-size: 0.9rem;">BABES AIR WAYS ${planeSvg}</div>
                         </div>
                     </div>
 
-                    <!-- STUB RIGHT TICKET -->
-                    <div class="ticket-right">
-                        <div class="t-top">
-                            <div class="t-title t-title-right">FIRST CLASS</div>
-                        </div>
-                        <div class="t-band">
-                            RBH - BSI
-                        </div>
-                        <div class="t-body">
-                            <div class="stub-grid">
-                                <div class="d-item">
-                                    <span class="d-label">FLIGHT:</span>
-                                    <span class="d-val">${flightNum}</span>
+                    <div class="ticket-right-section">
+                        <div class="t-right-title">FIRST CLASS</div>
+                        <div class="t-right-band">RBH - BSI</div>
+                        
+                        <div class="t-right-grid">
+                            <div class="detail-box">
+                                <span class="detail-label">NAME:</span>
+                                <span class="detail-value" style="font-size: 1rem;">${passengerName}</span>
+                            </div>
+                            <div class="detail-box">
+                                <span class="detail-label">DATE:</span>
+                                <span class="detail-value" style="font-size: 1rem;">${dateStr}</span>
+                            </div>
+                            <div class="detail-box">
+                                <span class="detail-label">BOARDING:</span>
+                                <span class="detail-value" style="font-size: 1rem;">${timeStr}</span>
+                            </div>
+                            <div style="display: flex; gap: 15px;">
+                                <div class="detail-box">
+                                    <span class="detail-label">FLIGHT:</span>
+                                    <span class="detail-value" style="font-size: 1rem;">${pendingFlightNum}</span>
                                 </div>
-                                <div class="d-item">
-                                    <span class="d-label">GATE:</span>
-                                    <span class="d-val">${gateNum}</span>
-                                </div>
-                                <div class="d-item">
-                                    <span class="d-label">BOARDING:</span>
-                                    <span class="d-val">${timeStr}</span>
-                                </div>
-                                <div class="d-item">
-                                    <span class="d-label">SEAT:</span>
-                                    <span class="d-val">${seatStr}</span>
-                                </div>
-                                <div class="d-item">
-                                    <span class="d-label">NAME:</span>
-                                    <span class="d-val">${passengerName}</span>
-                                </div>
-                                <div class="d-item">
-                                    <span class="d-label">DATE:</span>
-                                    <span class="d-val">${dateStr}</span>
+                                <div class="detail-box">
+                                    <span class="detail-label">GATE:</span>
+                                    <span class="detail-value" style="font-size: 1rem;">${pendingGateNum}</span>
                                 </div>
                             </div>
-                            
-                            <div class="stub-footer">
-                                <div class="barcode-container" style="transform: scale(0.8); transform-origin: right bottom;">
-                                    <div class="barcode-bars"></div>
-                                    <div class="barcode-numbers">0 734664 235788</div>
-                                </div>
+                            <div class="detail-box">
+                                <span class="detail-label">SEAT:</span>
+                                <span class="detail-value" style="font-size: 1rem;">${pendingSeatStr}</span>
+                            </div>
+                        </div>
+
+                        <div class="t-barcode-area t-right-barcode">
+                            <div class="barcode-visual">
+                                <div class="barcode-bars" style="width: 150px;"></div>
+                                0 734664 235788
                             </div>
                         </div>
                     </div>
@@ -1038,20 +889,11 @@
 
             document.getElementById('boarding-pass-modal').style.display = 'flex';
             
-            setTimeout(() => {
-                actionsContainer.style.display = 'flex';
-            }, 1000);
+            setTimeout(() => { actionsContainer.style.display = 'flex'; }, 1000);
 
             if (typeof confetti === 'function') {
-                confetti({
-                    particleCount: 200,
-                    spread: 90,
-                    origin: { y: 0.6 },
-                    colors: ['#ccff00', '#ffffff', '#1a1a1a', '#ff00aa', '#00e5ff']
-                });
-                setTimeout(() => {
-                    confetti({ particleCount: 100, spread: 120, origin: { y: 0.6 } });
-                }, 400);
+                confetti({ particleCount: 200, spread: 90, origin: { y: 0.6 }, colors: ['#ccff00', '#ffffff', '#1a1a1a', '#ff00aa', '#00e5ff'] });
+                setTimeout(() => { confetti({ particleCount: 100, spread: 120, origin: { y: 0.6 } }); }, 400);
             }
         }
 
@@ -1060,20 +902,14 @@
             const originalBtnText = document.getElementById('save-pass-btn').innerHTML;
             document.getElementById('save-pass-btn').innerHTML = '⏳ Saving...';
             
-            html2canvas(ticketElement, {
-                backgroundColor: null,
-                scale: 2 
-            }).then(canvas => {
+            html2canvas(ticketElement, { backgroundColor: null, scale: 2 }).then(canvas => {
                 const link = document.createElement('a');
-                link.download = `BabesIsland_BoardingPass_${userData.twitter || 'VIP'}.png`;
+                link.download = `BabesIsland_BoardingPass_${userData.twitter}.png`;
                 link.href = canvas.toDataURL('image/png');
                 link.click();
                 document.getElementById('save-pass-btn').innerHTML = '✅ Saved!';
-                setTimeout(() => {
-                    document.getElementById('save-pass-btn').innerHTML = originalBtnText;
-                }, 2000);
+                setTimeout(() => document.getElementById('save-pass-btn').innerHTML = originalBtnText, 2000);
             }).catch(err => {
-                console.error("Could not save image", err);
                 document.getElementById('save-pass-btn').innerHTML = '❌ Error';
             });
         });
@@ -1085,46 +921,21 @@
 
         document.getElementById('twitter-input').addEventListener('input', () => updateInputDisplay('twitter-input', 'twitter-display', TWITTER_MAX));
         document.getElementById('wallet-input').addEventListener('input', () => updateInputDisplay('wallet-input', 'wallet-display', WALLET_MAX));
-
-        document.getElementById('twitter-display').addEventListener('click', () => {
-            document.getElementById('twitter-input').focus();
-            document.getElementById('twitter-display').style.borderColor = "#ccff00";
-            document.getElementById('wallet-display').style.borderColor = "#444";
-        });
-
-        document.getElementById('wallet-display').addEventListener('click', () => {
-            document.getElementById('wallet-input').focus();
-            document.getElementById('wallet-display').style.borderColor = "#ccff00";
-            document.getElementById('twitter-display').style.borderColor = "#444";
-        });
-
-        document.getElementById('close-modal-btn').addEventListener('click', () => {
-            document.getElementById('boarding-pass-modal').style.display = 'none';
-        });
+        
+        document.getElementById('twitter-display').addEventListener('click', () => document.getElementById('twitter-input').focus());
+        document.getElementById('wallet-display').addEventListener('click', () => document.getElementById('wallet-input').focus());
+        document.getElementById('close-modal-btn').addEventListener('click', () => document.getElementById('boarding-pass-modal').style.display = 'none');
 
         document.getElementById('claim-btn').addEventListener('click', () => {
             const inputElement = document.getElementById('ticket-input');
             const statusElement = document.getElementById('claim-status-text');
             const ticketVal = inputElement.value.trim().toUpperCase();
-
             statusElement.textContent = "";
 
-            if (ticketVal === "") {
-                statusElement.textContent = "PLEASE ENTER A TICKET CODE";
-                return;
-            }
-
+            if (ticketVal === "") { statusElement.textContent = "PLEASE ENTER A TICKET CODE"; return; }
             const ticketData = TICKET_CODES[ticketVal];
-
-            if (!ticketData) {
-                statusElement.textContent = "INVALID TICKET CODE. PLEASE TRY AGAIN.";
-                return;
-            }
-
-            if (ticketData.claimed >= ticketData.capacity) {
-                statusElement.textContent = `TICKET CODE '${ticketVal}' IS FULLY CLAIMED.`;
-                return;
-            }
+            if (!ticketData) { statusElement.textContent = "INVALID TICKET CODE. PLEASE TRY AGAIN."; return; }
+            if (ticketData.claimed >= ticketData.capacity) { statusElement.textContent = `TICKET CODE '${ticketVal}' IS FULLY CLAIMED.`; return; }
 
             ticketData.claimed += 1;
             claimCount++;
@@ -1135,37 +946,27 @@
             pendingSeatStr = `${ticketData.claimed}/${ticketData.capacity}`;
 
             inputElement.value = '';
-
-            showMessage(`Success! Ticket Validated. Please enter your details.`, 'success');
             
+            // HIDE CLAIM SECTION & SHOW PASSENGER INFO SECTION
+            document.getElementById('claim-section').style.display = 'none';
             document.getElementById('passenger-info-screen').style.display = 'flex';
-            setTimeout(() => {
-                document.getElementById('twitter-input').focus();
-            }, 500);
-        });
-
-        document.getElementById('ticket-input').addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') {
-                document.getElementById('claim-btn').click();
-            }
+            
+            showMessage(`Success! Ticket Validated.`, 'success');
+            setTimeout(() => document.getElementById('twitter-input').focus(), 500);
         });
 
         document.getElementById('start-btn').addEventListener('click', () => {
-            const landing = document.getElementById('passenger-info-screen');
-            
             const originalText = document.getElementById('start-btn').innerHTML;
             document.getElementById('start-btn').innerHTML = 'GENERATING...';
-
             sendDataToSpreadsheet();
-
             setTimeout(() => {
-                landing.style.display = 'none';
+                document.getElementById('passenger-info-screen').style.display = 'none';
                 document.getElementById('start-btn').innerHTML = originalText;
-                
                 generateBoardingPass();
             }, 800);
         });
 
+        // Anti-Bot Game Logic
         function initAntiBotGame() {
             const gameArea = document.getElementById('gameArea');
             const coconut = document.getElementById('coconut');
@@ -1176,53 +977,40 @@
             let isVerified = false;
             let fallSpeed = 3; 
             let animationId;
-        let coconutsCaught = 0;
-        let gameStarted = false; // Flag status game
+            let coconutsCaught = 0;
+            let gameStarted = false; 
 
-        // Event listener untuk tombol START
-        document.getElementById('start-game-btn').addEventListener('click', function() {
-            // Ini adalah "User Interaction" pertama yang sah.
-            // Kita putar audio lalu pause seketika untuk 'membuka kunci' Autoplay Policy browser
-            const audio = document.getElementById('airport-audio');
-            if (audio) {
-                audio.volume = 0; // Set volume 0 dulu agar tidak kaget
-                audio.play().then(() => {
-                    audio.pause(); 
-                    audio.volume = 0.5; // Kembalikan volume normal untuk nanti
-                }).catch(e => console.log("Unlock audio failed:", e));
-            }
+            document.getElementById('start-game-btn').addEventListener('click', function() {
+                const audio = document.getElementById('airport-audio');
+                if (audio) {
+                    audio.volume = 0; 
+                    audio.play().then(() => {
+                        audio.pause(); 
+                        audio.volume = 0.5; 
+                    }).catch(e => console.log("Unlock audio failed:", e));
+                }
 
-            // Sembunyikan tombol start
-            document.getElementById('game-start-overlay').style.display = 'none';
-            
-            // Tampilkan elemen game
-            coconut.style.display = 'block';
-            basket.style.display = 'block';
-            
-            // Mulai permainan
-            gameStarted = true;
-            resetCoconut();
-            gameLoop();
-        });
+                document.getElementById('game-start-overlay').style.display = 'none';
+                coconut.style.display = 'block';
+                basket.style.display = 'block';
+                gameStarted = true;
+                resetCoconut();
+                gameLoop();
+            });
 
-        // Memastikan ukuran diambil secara real-time untuk mencegah bug nilai 0
-        function resetCoconut() {
-            if(!gameStarted) return; // Jangan reset jika belum mulai
-            
-            let gw = gameArea.clientWidth || 300;
+            function resetCoconut() {
+                if(!gameStarted) return; 
+                let gw = gameArea.clientWidth || 300;
                 coconutY = -30;
                 
-                // Mencegah kelapa jatuh di tengah (letak default keranjang)
                 let center = gw / 2;
-                let deadZone = 45; // Radius aman dari titik tengah
+                let deadZone = 45; 
                 let coconutX;
 
                 if (Math.random() < 0.5) {
-                    // Muncul di area KIRI
                     let maxLeft = center - deadZone;
                     coconutX = 25 + Math.random() * (maxLeft - 25);
                 } else {
-                    // Muncul di area KANAN
                     let minRight = center + deadZone;
                     coconutX = minRight + Math.random() * (gw - 25 - minRight);
                 }
@@ -1231,41 +1019,33 @@
                 coconut.style.top = coconutY + 'px';
             }
 
-            resetCoconut();
-
             function moveBasket(e) {
                 if (isVerified) return;
-                
-                // Mencegah layar ter-scroll saat dimainkan di HP
-                if(e.type === 'touchmove') e.preventDefault();
+                if(e.type === 'touchmove') e.preventDefault(); 
                 
                 let rect = gameArea.getBoundingClientRect();
                 let clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
                 let gw = gameArea.clientWidth || 300;
-                
                 let x = clientX - rect.left;
                 
-                // Batasi pergerakan keranjang agar tidak hilang dari layar
                 if (x < 25) x = 25;
                 if (x > gw - 25) x = gw - 25;
-                
                 basket.style.left = x + 'px';
             }
 
             gameArea.addEventListener('mousemove', moveBasket);
             gameArea.addEventListener('touchmove', moveBasket, { passive: false });
 
-        function gameLoop() {
-            if (isVerified || !gameStarted) return; // Cegah loop jika belum mulai
+            function gameLoop() {
+                if (isVerified || !gameStarted) return; 
 
-            let gh = gameArea.clientHeight || 200;
-            coconutY += fallSpeed;
+                let gh = gameArea.clientHeight || 200;
+                coconutY += fallSpeed;
                 coconut.style.top = coconutY + 'px';
 
                 let basketRect = basket.getBoundingClientRect();
                 let coconutRect = coconut.getBoundingClientRect();
 
-                // Hitung titik tengah keranjang & kelapa agar deteksi tabrakan lebih halus
                 let basketCenterX = basketRect.left + basketRect.width / 2;
                 let coconutCenterX = coconutRect.left + coconutRect.width / 2;
                 let distanceX = Math.abs(basketCenterX - coconutCenterX);
@@ -1273,7 +1053,7 @@
                 if (
                     coconutRect.bottom >= basketRect.top + 5 && 
                     coconutRect.top <= basketRect.bottom &&
-                    distanceX < (basketRect.width / 2 + 15) // Area tangkap lebih masuk akal
+                    distanceX < (basketRect.width / 2 + 15) 
                 ) {
                     coconutsCaught++;
                     if (coconutsCaught >= 3) {
@@ -1285,19 +1065,13 @@
                     }
                 }
 
-                if (coconutY > gh) {
-                    resetCoconut();
-                }
-
-                if (!isVerified) {
-                    animationId = requestAnimationFrame(gameLoop);
-                }
+                if (coconutY > gh) { resetCoconut(); }
+                if (!isVerified) { animationId = requestAnimationFrame(gameLoop); }
             }
 
             function verifikasiSukses() {
                 isVerified = true;
                 cancelAnimationFrame(animationId);
-                
                 coconut.style.display = 'none'; 
                 basket.innerText = '✅'; 
                 
@@ -1306,38 +1080,25 @@
                 gameArea.style.borderColor = "#008000"; 
 
                 setTimeout(() => {
-                const audio = document.getElementById('airport-audio');
-                if (audio) {
-                    audio.volume = 0.5;
-                    // Play audio setelah interaksi user disahkan di awal
-                    let playPromise = audio.play();
-                    if (playPromise !== undefined) {
-                        playPromise.catch(error => {
-                            console.log("Auto-play was prevented by browser policies:", error);
-                        });
-                    }
-                }
+                    const audio = document.getElementById('airport-audio');
+                    if (audio) { audio.volume = 0.5; audio.play().catch(e=>console.log(e)); }
 
-                const antiBotScreen = document.getElementById('anti-bot-screen');
+                    const antiBotScreen = document.getElementById('anti-bot-screen');
                     antiBotScreen.style.opacity = '0';
                     antiBotScreen.style.transition = 'opacity 0.5s ease';
                     
                     setTimeout(() => {
                         antiBotScreen.style.display = 'none';
-                        runBoardAnimationLoop(); // Mulai animasi
+                        runBoardAnimationLoop();
                     }, 500);
                 }, 1000);
             }
-
-            gameLoop();
         }
 
         window.onload = () => {
             buildBoardDOM();
             buildInputDisplays();
             startUTCClock();
-            
-            // Initialize the catch coconut game on load
             initAntiBotGame();
         };
     </script>
