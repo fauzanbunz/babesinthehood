@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Babes in the Hood - Interactive Map</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;800&family=Press+Start+2P&display=swap" rel="stylesheet">
+    
+    <style>
+        /* --- COLOR PALETTE --- */
+        :root {
+            --powder-pink: #ECA6A6;
+            --pastel-turquoise: #98CDCC;
+            --vanilla-cream: #F4D8C6;
+            --lake-blue: #008799;
+            --pale-marigold: #F1BB58;
+            --white: #FFFFFF;
+            --bg-light: #fdfaf6;
+        }
+
+        body {
+            background-color: #f8f0e6; 
+            background-image: url('ChatGPT%20Image%208%20Agu%202026%2C%2013.39.44.png');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Nunito', sans-serif;
+            overflow: hidden;
+            gap: 15px;
+        }
+
+        #map-container {
+            position: relative;
+            display: inline-block; 
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4); 
+            border-radius: 12px;
+            max-width: 98vw;
+            max-height: 85vh; 
+            overflow: hidden; 
+        }
+        
+        #map-image { 
+            max-width: 98vw; 
+            max-height: 85vh; 
+            width: auto; 
+            height: auto; 
+            display: block; 
+            pointer-events: none; 
+            border-radius: 12px;
+        }
+
+        #map-logo {
+            position: absolute; top: 20px; left: 20px; width: 15%; 
+            min-width: 100px; max-width: 250px; z-index: 25;
+            pointer-events: none; filter: drop-shadow(0px 4px 8px rgba(0,0,0,0.3));
+        }
+
+        /* --- HUD PROFILE (KANAN ATAS) --- */
+        .hud-profile {
+            position: absolute; top: 20px; right: 20px; z-index: 25;
+            background: rgba(255, 255, 255, 0.95); border: 3px solid var(--lake-blue);
+            border-radius: 16px; padding: 10px 15px; display: flex; gap: 15px;
+            align-items: center; box-shadow: 4px 4px 0px rgba(0, 135, 153, 0.2);
+            backdrop-filter: blur(5px);
+        }
+        .hud-avatar {
+            width: 50px; height: 50px; background: var(--vanilla-cream);
+            border: 2px solid var(--lake-blue); border-radius: 10px;
+            display: flex; justify-content: center; align-items: center;
+            font-family: 'Press Start 2P', cursive; font-size: 8px;
+            color: var(--lake-blue); text-align: center; line-height: 1.5;
+            background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,255,255,0.5) 5px, rgba(255,255,255,0.5) 10px);
+        }
+        .hud-info { display: flex; flex-direction: column; gap: 4px; }
+        .hud-name { font-weight: 800; color: var(--lake-blue); font-size: 14px; text-transform: uppercase; margin-bottom: 2px; }
+        .hud-balance { font-size: 12px; color: var(--powder-pink); font-weight: 800; display: flex; align-items: center; gap: 5px;}
+        .hud-balance span { color: var(--lake-blue); }
+
+        /* --- MARQUEE --- */
+        .marquee-wrapper { width: 98vw; max-width: 1920px; background-color: var(--white); border: 3px solid var(--pastel-turquoise); border-radius: 12px; overflow: hidden; display: flex; box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
+        .marquee-content { white-space: nowrap; font-family: 'Press Start 2P', cursive; color: var(--pastel-turquoise); font-size: 14px; padding: 12px 0; display: flex; flex-shrink: 0; min-width: 100%; justify-content: space-around; animation: scrollText 15s linear infinite; }
+        .marquee-content span { margin: 0 30px; }
+        @keyframes scrollText { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
+
+        /* --- WATER SPARKLES --- */
+        .sparkle { position: absolute; width: 4px; height: 4px; background-color: #ffffff; border-radius: 50%; box-shadow: 0 0 8px 2px rgba(255, 255, 255, 0.9); pointer-events: none; z-index: 10; animation: twinkle linear infinite; }
+        @keyframes twinkle { 0% { opacity: 0; transform: scale(0.5); } 50% { opacity: 1; transform: scale(1.5); } 100% { opacity: 0; transform: scale(0.5); } }
+
+        /* --- CLICKABLE LABELS --- */
+        .building-label { position: absolute; background-color: var(--white); color: var(--lake-blue); border: 3px solid var(--lake-blue); padding: 6px 12px; font-family: 'Press Start 2P', cursive; font-size: 10px; z-index: 20; cursor: pointer; box-shadow: 4px 4px 0px rgba(0, 135, 153, 0.2); text-transform: uppercase; transform: translate(-50%, -50%); animation: floatLabel 3s ease-in-out infinite; transition: 0.2s; }
+        .building-label:hover { background-color: var(--lake-blue); color: var(--white); border-color: var(--white); box-shadow: 4px 4px 0px rgba(255, 255, 255, 0.4); }
+        @keyframes floatLabel { 0%, 100% { margin-top: 0px; } 50% { margin-top: -8px; } }
+
+        /* --- AIRPLANE --- */
+        #airplane { position: absolute; z-index: 15; pointer-events: none; width: 24%; min-width: 150px; animation: flyPlane 60s linear infinite; }
+        @keyframes flyPlane { 0% { top: -50%; left: 120%; } 45% { top: 90%; left: -20%; } 100% { top: 90%; left: -20%; } }
+
+        /* --- MODALS --- */
+        #modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(244, 216, 198, 0.85); backdrop-filter: blur(10px); z-index: 99; opacity: 0; transition: opacity 0.3s ease; }
+        .babes-modal { display: none; position: fixed; width: 85vw; height: 85vh; background: var(--bg-light); border: 4px solid var(--vanilla-cream); border-radius: 24px; box-shadow: 0 15px 35px rgba(0, 135, 153, 0.2); padding: 20px 30px; z-index: 100; color: #4a4a4a; flex-direction: column; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0); opacity: 0; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .sub-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 400px; max-width: 90vw; background: var(--white); border: 4px solid var(--lake-blue); border-radius: 20px; padding: 20px; z-index: 200; box-shadow: 0 20px 50px rgba(0,0,0,0.3); flex-direction: column; }
+        
+        ::-webkit-scrollbar { width: 8px; } ::-webkit-scrollbar-track { background: var(--vanilla-cream); border-radius: 10px; } ::-webkit-scrollbar-thumb { background: var(--pastel-turquoise); border-radius: 10px; }
+        
+        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid var(--vanilla-cream); margin-bottom: 20px; padding-bottom: 15px; flex-shrink: 0; }
+        .modal-title { font-weight: 800; color: var(--lake-blue); margin: 0; font-family: 'Press Start 2P', cursive; font-size: 16px; }
+        .close-modal { background: var(--powder-pink); color: var(--white); width: 40px; height: 40px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 20px; font-weight: bold; cursor: pointer; transition: 0.2s ease; }
+        .close-modal:hover { background: var(--lake-blue); transform: scale(1.1); }
+
+        .modal-body { display: flex; gap: 20px; flex: 1; overflow: hidden; }
+        .col-left, .col-right { flex: 1; display: flex; flex-direction: column; overflow-y: auto; padding-right: 10px;}
+        .modal-section { background: var(--white); border-radius: 16px; padding: 20px; margin-bottom: 15px; border: 2px solid var(--vanilla-cream); }
+        .section-title { color: var(--pastel-turquoise); font-weight: 800; margin-top: 0; margin-bottom: 15px; font-size: 14px; text-transform: uppercase; }
+
+        .nft-large { width: 100%; aspect-ratio: 1 / 1; background: var(--vanilla-cream); border: 4px solid var(--lake-blue); border-radius: 16px; display: flex; flex-direction: column; justify-content: center; align-items: center; color: var(--lake-blue); font-family: 'Press Start 2P', cursive; font-size: 14px; margin-bottom: 15px; background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.5) 10px, rgba(255,255,255,0.5) 20px); text-align: center; padding: 10px; box-sizing: border-box;}
+        .item-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+        .item-square { width: 100%; aspect-ratio: 1 / 1; border: 2px dashed var(--pastel-turquoise); border-radius: 12px; background: rgba(152, 205, 204, 0.1); display: flex; flex-direction: column; justify-content: center; align-items: center; color: var(--lake-blue); font-weight: bold; font-size: 14px; cursor: pointer; transition: 0.2s; text-align: center; padding: 5px; box-sizing: border-box; }
+        .item-square:hover { background: var(--pale-marigold); border-color: var(--pale-marigold); color: var(--white); transform: translateY(-5px); }
+        .item-price { color: var(--powder-pink); font-size: 12px; margin-top: 5px; }
+
+        .tab-container { display: flex; gap: 10px; margin-bottom: 15px; }
+        .tab-btn { background: rgba(152, 205, 204, 0.3); color: var(--lake-blue); border: none; padding: 12px 20px; border-radius: 10px; font-family: 'Nunito', sans-serif; font-weight: 800; cursor: pointer; transition: 0.2s; flex: 1; }
+        .tab-btn.active { background: var(--lake-blue); color: var(--white); }
+        .tab-content { display: none; }
+
+        .btn { background: var(--pastel-turquoise); color: var(--white); border: none; padding: 15px; border-radius: 10px; font-family: 'Nunito', sans-serif; font-weight: 800; font-size: 16px; cursor: pointer; transition: 0.2s; width: 100%; margin-bottom: 10px; }
+        .btn:hover { background: var(--lake-blue); }
+        .btn-pink { background: var(--powder-pink); }
+        .btn-gold { background: var(--pale-marigold); }
+
+        .input-text, .textarea-box { width: calc(100% - 30px); padding: 15px; border: 2px solid var(--vanilla-cream); border-radius: 10px; font-family: 'Nunito', sans-serif; font-size: 16px; margin-bottom: 15px; outline: none; }
+        .textarea-box { height: 150px; resize: none; }
+
+        .chat-list { height: 100%; overflow-y: auto; border: 2px solid var(--vanilla-cream); padding: 15px; border-radius: 12px; margin-bottom: 15px; flex: 1; min-height: 150px; }
+        .chat-msg { margin-bottom: 12px; font-size: 15px; }
+        .chat-user { font-weight: bold; color: var(--lake-blue); }
+        .trade-box { display: flex; gap: 20px; margin-bottom: 20px; }
+        .trade-side { flex: 1; background: #fafafa; border: 2px solid var(--vanilla-cream); padding: 20px; border-radius: 12px; text-align: center; }
+        .trade-title { font-size: 14px; font-weight: 800; color: var(--lake-blue); margin-bottom: 15px; text-transform: uppercase; }
+
+        /* --- ROTATE WARNING --- */
+        #rotate-warning { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--vanilla-cream); color: var(--lake-blue); z-index: 9999; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 30px; box-sizing: border-box; }
+        #rotate-warning p { font-size: 16px; font-weight: 800; margin-top: 15px; max-width: 80%; }
+        .rotate-icon { font-size: 80px; margin-bottom: 20px; animation: rotatePhone 2s ease-in-out infinite alternate; }
+        @keyframes rotatePhone { 0% { transform: rotate(0deg); } 100% { transform: rotate(-90deg); } }
+
+        /* --- MOBILE RESPONSIVENESS --- */
+        @media (max-width: 768px) {
+            .babes-modal { width: 95vw; height: 90vh; padding: 15px; border-width: 3px; border-radius: 16px; }
+            .modal-title { font-size: 12px; }
+            .modal-body { flex-direction: column; overflow-y: auto; gap: 15px; }
+            .col-left, .col-right { overflow-y: visible; padding-right: 0; }
+            .item-grid { grid-template-columns: repeat(2, 1fr) !important; }
+            .tab-btn { padding: 8px 10px; font-size: 10px; }
+            .nft-large { width: 70%; margin: 0 auto 15px auto; }
+            .trade-box { flex-direction: column; gap: 10px; }
+            .sub-modal { width: 90vw; padding: 15px; }
+            .building-label { font-size: 8px; padding: 4px 8px; } 
+            
+            #map-logo { top: 10px; left: 10px; width: 20%; }
+            .hud-profile { top: 10px; right: 10px; padding: 5px 10px; gap: 10px; transform: scale(0.85); transform-origin: top right; }
+            .marquee-content { font-size: 10px; padding: 10px 0; }
+        }
+        @media (max-width: 1024px) and (orientation: portrait) { #rotate-warning { display: flex; } }
+    </style>
+</head>
+<body>
+
+    <div id="rotate-warning">
+        <div class="rotate-icon">📱</div>
+        <h2 class="modal-title" style="font-size: 20px;">PLEASE ROTATE</h2>
+        <p>Rotate your device to landscape mode for the best experience.</p>
+    </div>
+
+    <!-- PETA UTAMA -->
+    <div id="map-container">
+        <!-- LOGO MAP -->
+        <img id="map-logo" src="logo%20babes.svg" alt="Babes Logo">
+
+        <!-- HUD PROFILE (KANAN ATAS) -->
+        <div class="hud-profile">
+            <div class="hud-avatar" id="hud-avatar-box">BABE</div>
+            <div class="hud-info">
+                <div class="hud-name" id="hud-name-display">Babes #001</div>
+                <div class="hud-balance">🪙 <span id="hud-babes-balance">1000</span> $babes</div>
+                <div class="hud-balance">♦ <span id="hud-eth-balance">0.5</span> ETH</div>
+            </div>
+        </div>
+
+        <img id="map-image" src="map-babes.webp" alt="Babes Island Map">
+        <img id="airplane" src="plane.webp" alt="Flying Plane">
+        
+        <div class="building-label" style="left: 46%; top: 59%;" onclick="openModal('the_shop', event)">THE SHOP</div>
+        <div class="building-label" style="left: 60%; top: 46%;" onclick="openModal('the_cafe', event)">THE CAFE</div>
+        <div class="building-label" style="left: 77%; top: 24%;" onclick="openModal('babes_club', event)">BABES CLUB</div>
+        <div class="building-label" style="left: 54%; top: 64%;" onclick="openModal('guard_tower', event)">GUARD TOWER</div>
+        <div class="building-label" style="left: 84%; top: 35%;" onclick="openModal('the_hut', event)">THE HUT</div>
+    </div>
+
+    <!-- TEKS BERJALAN -->
+    <div class="marquee-wrapper">
+        <div class="marquee-content">
+            <span>BABES IN THE HOOD</span><span>BABES IN THE HOOD</span><span>BABES IN THE HOOD</span><span>BABES IN THE HOOD</span><span>BABES IN THE HOOD</span>
+        </div>
+        <div class="marquee-content">
+            <span>BABES IN THE HOOD</span><span>BABES IN THE HOOD</span><span>BABES IN THE HOOD</span><span>BABES IN THE HOOD</span><span>BABES IN THE HOOD</span>
+        </div>
+    </div>
+
+    <!-- MAIN OVERLAY -->
+    <div id="modal-overlay"></div>
+
+    <!-- 1. THE HUT -->
+    <div class="babes-modal" id="modal-the_hut">
+        <div class="modal-header">
+            <h3 class="modal-title">THE HUT // PROFILE</h3>
+            <div class="close-modal">X</div>
+        </div>
+        <div class="modal-body">
+            <div class="col-left">
+                <div class="modal-section" style="flex: 1;">
+                    <h4 class="section-title">YOUR BABE NFT</h4>
+                    <div class="nft-large" id="avatar-preview">LOADING...</div>
+                    <!-- INPUT UBAH NAMA -->
+                    <input type="text" id="profile-name-input" class="input-text" value="Babes #001" placeholder="Change profile name...">
+                    <button class="btn" onclick="saveName()" style="margin-bottom: 30px;">SAVE NAME</button>
+                    
+                    <h4 class="section-title" style="color: var(--powder-pink);">ACTIONS</h4>
+                    <button class="btn btn-pink">MINT WARDROBE (Lock & Burn)</button>
+                    <button class="btn btn-gold">STAKE NFT (Join Contest)</button>
+                </div>
+            </div>
+            <div class="col-right">
+                <div class="modal-section" style="flex: 1;">
+                    <h4 class="section-title">INVENTORY</h4>
+                    <div class="tab-container">
+                        <button class="tab-btn active" onclick="switchTab('hut', 'clothes')">CLOTHES</button>
+                        <button class="tab-btn" onclick="switchTab('hut', 'accessories')">ACCESSORIES</button>
+                        <button class="tab-btn" onclick="switchTab('hut', 'glasses')">GLASSES</button>
+                    </div>
+                    <div id="hut-clothes" class="tab-content hut-content" style="display: block;"><div class="item-grid" id="grid-hut-clothes"></div></div>
+                    <div id="hut-accessories" class="tab-content hut-content"><div class="item-grid" id="grid-hut-accessories"></div></div>
+                    <div id="hut-glasses" class="tab-content hut-content"><div class="item-grid" id="grid-hut-glasses"></div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. THE SHOP -->
+    <div class="babes-modal" id="modal-the_shop">
+        <div class="modal-header"><h3 class="modal-title">THE SHOP // MARKETPLACE</h3><div class="close-modal">X</div></div>
+        <div class="modal-body" style="flex-direction: column;">
+            <div style="text-align: center; margin-bottom: 10px; font-weight: 800; color: var(--powder-pink); font-size: 18px;">
+                YOUR BALANCE: <span id="shop-balance">1000</span> $babes
+            </div>
+            <div class="tab-container" style="max-width: 600px; margin: 0 auto 20px auto;">
+                <button class="tab-btn active" onclick="switchTab('shop', 'clothes')">BIKINIS</button>
+                <button class="tab-btn" onclick="switchTab('shop', 'accessories')">TATTOOS & PIERCINGS</button>
+                <button class="tab-btn" onclick="switchTab('shop', 'glasses')">GLASSES & EYES</button>
+            </div>
+            <div class="modal-section" style="flex: 1; overflow-y: auto;">
+                <div id="shop-clothes" class="tab-content shop-content" style="display: block;">
+                    <div class="item-grid" style="grid-template-columns: repeat(4, 1fr);">
+                        <div class="item-square" onclick="buyItem('Neon Bikini', 50, 'clothes')"><span>Neon Bikini</span><span class="item-price">50 $babes</span></div>
+                        <div class="item-square" onclick="buyItem('Polka Dot', 75, 'clothes')"><span>Polka Dot</span><span class="item-price">75 $babes</span></div>
+                        <div class="item-square" onclick="buyItem('Vice One-Piece', 120, 'clothes')"><span>Vice One-Piece</span><span class="item-price">120 $babes</span></div>
+                        <div class="item-square" onclick="buyItem('Black Leather', 200, 'clothes')"><span>Black Leather</span><span class="item-price">200 $babes</span></div>
+                    </div>
+                </div>
+                <div id="shop-accessories" class="tab-content shop-content">
+                    <div class="item-grid" style="grid-template-columns: repeat(4, 1fr);">
+                        <div class="item-square" onclick="buyItem('Dragon Tattoo', 100, 'accessories')"><span>Dragon Tattoo</span><span class="item-price">100 $babes</span></div>
+                        <div class="item-square" onclick="buyItem('Navel Ring', 40, 'accessories')"><span>Navel Ring</span><span class="item-price">40 $babes</span></div>
+                    </div>
+                </div>
+                <div id="shop-glasses" class="tab-content shop-content">
+                    <div class="item-grid" style="grid-template-columns: repeat(4, 1fr);">
+                        <div class="item-square" onclick="buyItem('Aviators', 80, 'glasses')"><span>Aviators</span><span class="item-price">80 $babes</span></div>
+                        <div class="item-square" onclick="buyItem('Green Eyes', 300, 'glasses')"><span>Green Eyes</span><span class="item-price">300 $babes</span></div>
+                        <div class="item-square" onclick="buyItem('3D Glasses', 150, 'glasses')"><span>3D Glasses</span><span class="item-price">150 $babes</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. THE CAFE -->
+    <div class="babes-modal" id="modal-the_cafe">
+        <div class="modal-header"><h3 class="modal-title">THE CAFE // SOCIAL & TRADE</h3><div class="close-modal">X</div></div>
+        <div class="modal-body">
+            <div class="col-left">
+                <div class="modal-section" style="flex: 1; display: flex; flex-direction: column;">
+                    <h4 class="section-title">VIP LIVE CHAT</h4>
+                    <div class="chat-list">
+                        <div class="chat-msg"><span class="chat-user">[Babes #099] Alice:</span> WTB Neon Bikini! Dm offers.</div>
+                        <div class="chat-msg"><span class="chat-user">[Babes #412] Bob:</span> I have a Dragon Tattoo, looking for Aviators.</div>
+                        <div class="chat-msg"><span class="chat-user">[<span class="hud-name-sync">Babes #001</span>] You:</span> Let's trade!</div>
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-top: auto;">
+                        <input type="text" class="input-text" style="margin-bottom: 0;" placeholder="Type message...">
+                        <button class="btn" style="width: 120px; margin-bottom: 0;">SEND</button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-right">
+                <div class="modal-section" style="flex: 1;">
+                    <h4 class="section-title">P2P ITEM TRADE STATION</h4>
+                    <p style="font-size: 14px; margin-bottom: 20px;">Secure Smart Contract Escrow. Both parties must approve to finalize.</p>
+                    <div class="trade-box">
+                        <div class="trade-side"><div class="trade-title">YOU PROVIDE</div><div class="item-square" style="width: 60%; margin: 0 auto;">Select Item</div></div>
+                        <div style="display: flex; align-items: center; justify-content: center; font-size: 30px; font-weight: bold; color: var(--powder-pink);">⇄</div>
+                        <div class="trade-side"><div class="trade-title">THEY PROVIDE</div><div class="item-square" style="width: 60%; margin: 0 auto; border-color: var(--powder-pink); color: var(--powder-pink);">Target Item</div></div>
+                    </div>
+                    <button class="btn btn-gold" onclick="openSubModal('trade-negotiate')">NEGOTIATE & APPROVE TRANSACTION</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SUB-MODAL FOR CAFE NEGOTIATION -->
+    <div id="modal-trade-negotiate" class="sub-modal">
+        <h3 style="color: var(--lake-blue); font-family: 'Press Start 2P', cursive; font-size: 12px; margin-top: 0; text-align: center;">NEGOTIATION</h3>
+        <p style="text-align: center; font-size: 14px; margin-bottom: 20px;">Add $babes or Items to sweeten the deal.</p>
+        <input type="number" class="input-text" placeholder="Add $babes amount...">
+        <button class="btn">ADD ITEM FROM INVENTORY</button>
+        <hr style="width: 100%; border: 1px dashed var(--vanilla-cream); margin: 20px 0;">
+        <button class="btn btn-gold">APPROVE TRADE (Sign TX)</button>
+        <button class="btn btn-pink" onclick="closeSubModal('trade-negotiate')">CANCEL</button>
+    </div>
+
+    <!-- 4. BABES CLUB -->
+    <div class="babes-modal" id="modal-babes_club">
+        <div class="modal-header"><h3 class="modal-title">BABES CLUB // WEEKLY CONTEST</h3><div class="close-modal">X</div></div>
+        <div class="modal-body">
+            <div class="col-left" style="flex: 2;">
+                <div class="modal-section" style="flex: 1;">
+                    <h4 class="section-title">ACTIVE POLLING (VOTE NOW)</h4>
+                    <div style="display: flex; gap: 20px;">
+                        <div style="flex: 1; text-align: center;"><div class="nft-large" style="border-color: var(--powder-pink);">Babes #102<br>(SQUARE)</div><button class="btn btn-pink">VOTE #102</button></div>
+                        <div style="display: flex; align-items: center; font-weight: 800; color: var(--lake-blue); font-size: 24px;">VS</div>
+                        <div style="flex: 1; text-align: center;"><div class="nft-large">Babes #888<br>(SQUARE)</div><button class="btn">VOTE #888</button></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-right">
+                <div class="modal-section" style="flex: 1; text-align: center;">
+                    <h4 class="section-title">PREVIOUS WINNER</h4>
+                    <div class="nft-large" style="border-color: var(--pale-marigold); background: rgba(241, 187, 88, 0.1);">👑 Babes #505<br>(SQUARE)</div>
+                    <p style="font-weight: 800; color: var(--pale-marigold);">REWARD WON: 500 $babes</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. GUARD TOWER -->
+    <div class="babes-modal" id="modal-guard_tower">
+        <div class="modal-header"><h3 class="modal-title">GUARD TOWER // SUPPORT</h3><div class="close-modal">X</div></div>
+        <div class="modal-body" style="justify-content: center; align-items: center;">
+            <div class="modal-section" style="width: 100%; max-width: 800px;">
+                <h4 class="section-title">REPORT TO ADMIN / DEV</h4>
+                <p style="font-size: 16px;">Having issues with the island facilities? Leave a message below.</p>
+                <textarea class="textarea-box" placeholder="Describe your issue here..."></textarea>
+                <button class="btn" style="padding: 20px;">SUBMIT REPORT</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT LOGIC & DUMMY SIMULATION -->
+    <script>
+        // --- DUMMY GAME STATE ---
+        let userName = "Babes #001";
+        let userEth = 0.5;
+        let userBalance = 1000;
+        let userInventory = { clothes: ['Red Bikini'], accessories: ['Belly Piercing'], glasses: ['Blue Eyes'] };
+        let equipped = { clothes: 'Red Bikini', accessories: 'Belly Piercing', glasses: 'Blue Eyes' };
+
+        // --- HUD SYNCING ---
+        function updateHUD() {
+            document.getElementById('hud-name-display').innerText = userName;
+            document.getElementById('hud-babes-balance').innerText = userBalance;
+            document.getElementById('hud-eth-balance').innerText = userEth;
+            
+            // Mengubah nama juga di panel chat The Cafe
+            const chatSyncs = document.querySelectorAll('.hud-name-sync');
+            chatSyncs.forEach(el => el.innerText = userName);
+
+            // Teks avatar mini di HUD
+            document.getElementById('hud-avatar-box').innerHTML = `BABE<br><span style="font-size:5px; margin-top:2px;">${equipped.clothes.split(' ')[0]}</span>`;
+        }
+
+        // Simpan Nama dari The Hut
+        function saveName() {
+            const inputField = document.getElementById('profile-name-input');
+            if (inputField.value.trim() !== "") {
+                userName = inputField.value;
+                updateHUD();
+                alert("Profile name saved successfully!");
+            }
+        }
+
+        function buyItem(itemName, price, category) {
+            if (userInventory[category].includes(itemName)) {
+                alert(`You already own the ${itemName}! Check The Hut.`);
+                return;
+            }
+            if (userBalance >= price) {
+                userBalance -= price;
+                userInventory[category].push(itemName);
+                
+                document.getElementById('shop-balance').innerText = userBalance;
+                updateHUD(); // Sinkronkan ke map luar
+                renderInventory();
+                alert(`Success! You bought ${itemName} for ${price} $babes.\nIt is now in your Wardrobe.`);
+            } else {
+                alert("Transaction Failed: Not enough $babes balance!");
+            }
+        }
+
+        function equipItem(itemName, category) {
+            equipped[category] = itemName;
+            updateAvatarPreview();
+            updateHUD(); // Sinkronkan ke map luar
+        }
+
+        function renderInventory() {
+            const categories = ['clothes', 'accessories', 'glasses'];
+            categories.forEach(cat => {
+                const container = document.getElementById(`grid-hut-${cat}`);
+                container.innerHTML = ''; 
+                if (userInventory[cat].length === 0) {
+                    container.innerHTML = '<div class="item-square" style="opacity: 0.5;">Empty</div>';
+                } else {
+                    userInventory[cat].forEach(item => {
+                        container.innerHTML += `<div class="item-square" onclick="equipItem('${item}', '${cat}')" style="border-color: var(--lake-blue);"><span>${item}</span><span style="font-size:10px; font-weight:normal; margin-top:5px;">(Click to Equip)</span></div>`;
+                    });
+                }
+            });
+        }
+
+        function updateAvatarPreview() {
+            const avatarBox = document.getElementById('avatar-preview');
+            avatarBox.innerHTML = `YOUR BABE<br><br>
+                <span style="font-size:12px; color:var(--powder-pink); line-height: 1.8;">
+                [ ${equipped.clothes} ]<br>
+                [ ${equipped.accessories} ]<br>
+                [ ${equipped.glasses} ]
+                </span>`;
+        }
+
+        // --- UI & MODAL LOGIC ---
+        let currentOpenModal = null; let closingTimers = []; let overlay = null;
+
+        function switchTab(modalContext, tabName) {
+            const modalEl = document.getElementById('modal-' + (modalContext === 'hut' ? 'the_hut' : 'the_shop'));
+            const buttons = modalEl.querySelectorAll('.tab-btn');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            const contents = modalEl.querySelectorAll('.' + modalContext + '-content');
+            contents.forEach(content => content.style.display = 'none');
+            document.getElementById(modalContext + '-' + tabName).style.display = 'block';
+        }
+
+        function openSubModal(id) { document.getElementById('modal-' + id).style.display = 'flex'; }
+        function closeSubModal(id) { document.getElementById('modal-' + id).style.display = 'none'; }
+
+        function openModal(zoneId, event) {
+            if (!overlay) overlay = document.getElementById('modal-overlay');
+            const modal = document.getElementById('modal-' + zoneId);
+            if (modal && overlay) {
+                closingTimers.forEach(clearTimeout); closingTimers = [];
+                const modals = document.querySelectorAll('.babes-modal');
+                modals.forEach(m => { m.style.display = 'none'; m.style.opacity = '0'; });
+
+                overlay.style.display = 'block';
+                setTimeout(() => { overlay.style.opacity = '1'; }, 10);
+                
+                modal.style.top = event.clientY + 'px'; modal.style.left = event.clientX + 'px';
+                modal.style.transform = 'translate(-50%, -50%) scale(0)'; modal.style.opacity = '0'; modal.style.display = 'flex';
+                void modal.offsetWidth; 
+                modal.style.top = '50%'; modal.style.left = '50%';
+                modal.style.transform = 'translate(-50%, -50%) scale(1)'; modal.style.opacity = '1';
+                currentOpenModal = modal;
+            }
+        }
+
+        function closeAllModals() {
+            if (!overlay) overlay = document.getElementById('modal-overlay');
+            if (overlay) {
+                overlay.style.opacity = '0'; closingTimers.push(setTimeout(() => { overlay.style.display = 'none'; }, 300));
+                const modals = document.querySelectorAll('.babes-modal');
+                modals.forEach(modal => {
+                    modal.style.transform = 'translate(-50%, -50%) scale(0)'; modal.style.opacity = '0';
+                    closingTimers.push(setTimeout(() => { modal.style.display = 'none'; }, 300));
+                });
+                const subModals = document.querySelectorAll('.sub-modal');
+                subModals.forEach(sub => sub.style.display = 'none');
+                currentOpenModal = null;
+            }
+        }
+
+        function generateSparkles() {
+            const mapContainer = document.getElementById('map-container');
+            const waterZones = [
+                { x: 2, y: 50, w: 20, h: 45, count: 12 }, { x: 28, y: 40, w: 10, h: 35, count: 8 },  
+                { x: 35, y: 85, w: 20, h: 10, count: 6 }, { x: 80, y: 5, w: 18, h: 15, count: 6 },    
+                { x: 92, y: 65, w: 6, h: 25, count: 4 }     
+            ];
+            waterZones.forEach(zone => {
+                for(let i = 0; i < zone.count; i++) {
+                    let sparkle = document.createElement('div'); sparkle.className = 'sparkle';
+                    sparkle.style.left = (zone.x + (Math.random() * zone.w)) + '%'; sparkle.style.top = (zone.y + (Math.random() * zone.h)) + '%';
+                    const delay = Math.random() * 5; const duration = 2 + (Math.random() * 3); 
+                    sparkle.style.animationDelay = delay + 's'; sparkle.style.animationDuration = duration + 's';
+                    mapContainer.appendChild(sparkle);
+                }
+            });
+        }
+
+        window.onload = () => {
+            overlay = document.getElementById('modal-overlay');
+            const closeButtons = document.querySelectorAll('.close-modal');
+            closeButtons.forEach(button => { button.addEventListener('click', closeAllModals); });
+            overlay.addEventListener('click', closeAllModals);
+            
+            generateSparkles();
+            renderInventory();
+            updateAvatarPreview();
+            updateHUD();
+        };
+    </script>
+</body>
+</html>
