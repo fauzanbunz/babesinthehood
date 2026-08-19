@@ -7,6 +7,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- Menambahkan Library Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;700&display=swap');
 
@@ -206,9 +208,8 @@
             z-index: 10;
         }
 
-        /* KHUSUS UNTUK MENYEMBUNYIKAN LAYER INFO PENUMPANG DI AWAL */
         #passenger-info-screen {
-            display: none; /* Sembunyikan secara default */
+            display: none; 
             flex-direction: column;
             align-items: center;
         }
@@ -291,7 +292,7 @@
         #game-start-overlay button:hover { background-color: #d4ff33; transform: translate(-1px, -1px); box-shadow: 3px 3px 0 #000; }
 
         #boarding-pass-modal {
-            display: none; /* Sembunyikan secara default */
+            display: none; 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background-color: rgba(0,0,0,0.9); z-index: 9999;
             justify-content: center; align-items: center; flex-direction: column;
@@ -380,13 +381,11 @@
         }
 
         @media (max-width: 850px) {
-            /* Board adjustments */
             .header { flex-direction: column; gap: 15px; }
             .header-title { font-size: 2.5rem; text-align: center; }
             .utc-clock-container { width: 100%; justify-content: center; }
-            .board-header-row { display: none; } /* Hide horizontal headers */
+            .board-header-row { display: none; } 
             
-            /* Stack board vertically */
             .board-row {
                 display: flex; flex-direction: column; align-items: center;
                 gap: 1.5rem; width: 100%; margin: 0 auto;
@@ -402,17 +401,15 @@
             #cell-gate-0::before { content: 'GATE'; }
             #cell-remark-0::before { content: 'REMARK'; }
             
-            /* Preserve UTC layout */
             .utc-clock-container .cell { flex-wrap: nowrap; }
             .utc-clock-container .cell::before { content: none !important; }
 
-            /* Ticket adjustments for mobile */
             .pure-html-ticket { flex-direction: column; max-width: 400px; }
             .ticket-left-section { border-right: none; border-bottom: 3px dashed #1a2a3a; padding: 15px; }
             .ticket-right-section { padding: 15px; }
             .pure-html-ticket::before, .pure-html-ticket::after { display: none; }
             
-            .t-type span { display: none; } /* hide 'BOARDING PASS' text to save space */
+            .t-type span { display: none; } 
             .b-code { font-size: 2.5rem; }
             .band-center svg { width: 25px; height: 25px; }
             .detail-label { font-size: 0.9rem; }
@@ -531,7 +528,10 @@
     </div>
 
     <script>
-        const GOOGLE_SHEET_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzYki2gR4JW4nauX62tDL-JDKx1g3Hk4K2dWxEaGH2_nBZm-7INKPAKMUHR-9wNaDOQ6Q/exec";
+        // INISIALISASI SUPABASE (PASTIKAN MENGGUNAKAN ANON KEY, BUKAN SECRET KEY)
+        const SUPABASE_URL = "https://ssqbhcqiuxpzrrfkkxtq.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_nF7d7N5na61IhESMyiH9CQ_J8e5g4KA";
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         const MAX_ROWS = 1; 
         let claimCount = 0; 
@@ -907,7 +907,7 @@
         document.getElementById('wallet-display').addEventListener('click', () => document.getElementById('wallet-input').focus());
         document.getElementById('close-modal-btn').addEventListener('click', () => document.getElementById('boarding-pass-modal').style.display = 'none');
 
-        // LOGIKA BARU UNTUK KLIK TOMBOL CLAIM CODE (VERIFY KE GOOGLE SHEETS)
+        // LOGIKA BARU UNTUK KLIK TOMBOL CLAIM CODE (VERIFY KE SUPABASE INSTAN)
         document.getElementById('claim-btn').addEventListener('click', async () => {
             const inputElement = document.getElementById('ticket-input');
             const statusElement = document.getElementById('claim-status-text');
@@ -921,23 +921,23 @@
             document.getElementById('claim-btn').disabled = true;
 
             try {
-                const response = await fetch(GOOGLE_SHEET_WEBAPP_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain' },
-                    body: JSON.stringify({
-                        action: "verify",
-                        ticketCode: ticketVal
-                    })
-                });
+                // Membaca data tiket langsung dari database Supabase
+                const { data, error } = await supabaseClient
+                    .from('tickets')
+                    .select('*')
+                    .eq('code', ticketVal)
+                    .single();
                 
-                const result = await response.json();
-                
-                if (result.status === "success") {
-                    claimCount++;
+                if (error || !data) {
+                    statusElement.textContent = "INVALID TICKET CODE. PLEASE TRY AGAIN.";
+                } else if (data.claimed >= data.capacity) {
+                    statusElement.textContent = "TICKET CODE IS FULLY CLAIMED (SOLD OUT)!";
+                } else {
+                    claimCount = data.claimed;
                     pendingTicketCode = ticketVal;
-                    pendingFlightNum = formatFlight(claimCount).trim();
+                    pendingFlightNum = formatFlight(claimCount + 1).trim();
                     pendingGateNum = generateRandomGate();
-                    pendingSeatStr = `CONFIRMED`; 
+                    pendingSeatStr = `${claimCount + 1}/${data.capacity}`; 
 
                     inputElement.value = '';
                     document.getElementById('claim-section').style.display = 'none';
@@ -945,8 +945,6 @@
                     
                     showMessage(`Success! Ticket Validated.`, 'success');
                     setTimeout(() => document.getElementById('twitter-input').focus(), 500);
-                } else {
-                    statusElement.textContent = result.message || "INVALID TICKET CODE. PLEASE TRY AGAIN.";
                 }
             } catch (error) {
                 console.error("Verification error:", error);
@@ -957,37 +955,31 @@
             }
         });
 
-        // LOGIKA BARU UNTUK KLIK TOMBOL ISSUE TICKET (CLAIM & SAVE DATA KE GOOGLE SHEETS)
+        // LOGIKA BARU UNTUK KLIK TOMBOL ISSUE TICKET (ATOMIC CLAIM KE SUPABASE)
         document.getElementById('start-btn').addEventListener('click', async () => {
             const originalText = document.getElementById('start-btn').innerHTML;
             document.getElementById('start-btn').innerHTML = 'GENERATING...';
             document.getElementById('start-btn').disabled = true;
 
-            const dataToSave = {
-                action: "claim",
-                ticketCode: pendingTicketCode,
-                twitter: "@" + userData.twitter,
-                wallet: userData.wallet
-            };
-
             try {
-                const response = await fetch(GOOGLE_SHEET_WEBAPP_URL, {
-                    method: "POST",
-                    headers: { "Content-Type": "text/plain" },
-                    body: JSON.stringify(dataToSave)
+                // Memanggil fungsi SQL (RPC) untuk claim tanpa tabrakan data
+                const { data, error } = await supabaseClient.rpc('claim_ticket', {
+                    p_code: pendingTicketCode,
+                    p_twitter: "@" + userData.twitter,
+                    p_wallet: userData.wallet
                 });
                 
-                const result = await response.json();
+                if (error) throw error;
 
-                if (result.status === "success") {
+                if (data.status === "success") {
                     document.getElementById('passenger-info-screen').style.display = 'none';
                     generateBoardingPass();
                 } else {
-                    showMessage(result.message || "TICKET CLAIM FAILED", "error");
+                    showMessage(data.message || "TICKET CLAIM FAILED", "error");
                 }
             } catch (error) { 
-                console.error("Sheet Error:", error); 
-                showMessage("NETWORK ERROR", "error");
+                console.error("Supabase Error:", error); 
+                showMessage("SERVER BUSY OR NETWORK ERROR", "error");
             } finally {
                 document.getElementById('start-btn').innerHTML = originalText;
                 document.getElementById('start-btn').disabled = false;
