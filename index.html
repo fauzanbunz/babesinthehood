@@ -234,9 +234,13 @@
             width: 100%; max-width: 500px;
         }
 
-        .action-btn:hover {
+        .action-btn:hover:not(:disabled) {
             background-color: #d4ff33; transform: translateY(-2px);
             box-shadow: 0 4px 10px rgba(204, 255, 0, 0.4);
+        }
+        
+        .action-btn:disabled {
+            opacity: 0.7; cursor: not-allowed;
         }
 
         #message-box {
@@ -530,7 +534,7 @@
         const GOOGLE_SHEET_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzYki2gR4JW4nauX62tDL-JDKx1g3Hk4K2dWxEaGH2_nBZm-7INKPAKMUHR-9wNaDOQ6Q/exec";
 
         const MAX_ROWS = 1; 
-        let claimCount = 1; 
+        let claimCount = 0; 
         let isAnimating = false;
         let currentRemarkIndex = 0;
 
@@ -538,12 +542,6 @@
         let pendingFlightNum = "";
         let pendingGateNum = "";
         let pendingSeatStr = "";
-
-        const TICKET_CODES = {
-            "EARLYBIRD": { capacity: 20, claimed: 0 },
-            "VIPACCESS": { capacity: 5, claimed: 5 },
-            "BABES2026": { capacity: 100, claimed: 12 }
-        };
 
         let userData = { twitter: "", wallet: "" };
 
@@ -679,7 +677,7 @@
                 const rIndex = 0;
                 await animateCellString(`cell-time-${rIndex}`, generateRandomTime());
                 await animateCellString(`cell-dest-${rIndex}`, "BABES ISLAND");
-                await animateCellString(`cell-flight-${rIndex}`, formatFlight(claimCount));
+                await animateCellString(`cell-flight-${rIndex}`, formatFlight(Math.floor(Math.random() * 100) + 1));
                 await animateCellString(`cell-gate-${rIndex}`, generateRandomGate());
                 await animateCellString(`cell-remark-${rIndex}`, REMARKS[currentRemarkIndex % REMARKS.length]);
                 
@@ -749,23 +747,6 @@
             box.className = type === 'error' ? 'error' : '';
             box.style.display = 'block';
             setTimeout(() => box.style.display = 'none', 3000);
-        }
-
-        async function sendDataToSpreadsheet() {
-            const dataToSave = {
-                twitter: "@" + userData.twitter,
-                wallet: userData.wallet
-            };
-            try {
-                // Menggunakan mode no-cors agar tidak di blokir browser
-                await fetch(GOOGLE_SHEET_WEBAPP_URL, {
-                    method: "POST",
-                    mode: "no-cors",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(dataToSave)
-                });
-                console.log("Data Sent to Sheets.");
-            } catch (error) { console.error("Sheet Error:", error); }
         }
 
         async function generateBoardingPass() {
@@ -926,44 +907,91 @@
         document.getElementById('wallet-display').addEventListener('click', () => document.getElementById('wallet-input').focus());
         document.getElementById('close-modal-btn').addEventListener('click', () => document.getElementById('boarding-pass-modal').style.display = 'none');
 
-        document.getElementById('claim-btn').addEventListener('click', () => {
+        // LOGIKA BARU UNTUK KLIK TOMBOL CLAIM CODE (VERIFY KE GOOGLE SHEETS)
+        document.getElementById('claim-btn').addEventListener('click', async () => {
             const inputElement = document.getElementById('ticket-input');
             const statusElement = document.getElementById('claim-status-text');
             const ticketVal = inputElement.value.trim().toUpperCase();
             statusElement.textContent = "";
 
             if (ticketVal === "") { statusElement.textContent = "PLEASE ENTER A TICKET CODE"; return; }
-            const ticketData = TICKET_CODES[ticketVal];
-            if (!ticketData) { statusElement.textContent = "INVALID TICKET CODE. PLEASE TRY AGAIN."; return; }
-            if (ticketData.claimed >= ticketData.capacity) { statusElement.textContent = `TICKET CODE '${ticketVal}' IS FULLY CLAIMED.`; return; }
 
-            ticketData.claimed += 1;
-            claimCount++;
-            
-            pendingTicketCode = ticketVal;
-            pendingFlightNum = formatFlight(claimCount).trim();
-            pendingGateNum = generateRandomGate();
-            pendingSeatStr = `${ticketData.claimed}/${ticketData.capacity}`;
+            const originalText = document.getElementById('claim-btn').innerHTML;
+            document.getElementById('claim-btn').innerHTML = 'VERIFYING...';
+            document.getElementById('claim-btn').disabled = true;
 
-            inputElement.value = '';
-            
-            // HIDE CLAIM SECTION & SHOW PASSENGER INFO SECTION
-            document.getElementById('claim-section').style.display = 'none';
-            document.getElementById('passenger-info-screen').style.display = 'flex';
-            
-            showMessage(`Success! Ticket Validated.`, 'success');
-            setTimeout(() => document.getElementById('twitter-input').focus(), 500);
+            try {
+                const response = await fetch(GOOGLE_SHEET_WEBAPP_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify({
+                        action: "verify",
+                        ticketCode: ticketVal
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.status === "success") {
+                    claimCount++;
+                    pendingTicketCode = ticketVal;
+                    pendingFlightNum = formatFlight(claimCount).trim();
+                    pendingGateNum = generateRandomGate();
+                    pendingSeatStr = `CONFIRMED`; 
+
+                    inputElement.value = '';
+                    document.getElementById('claim-section').style.display = 'none';
+                    document.getElementById('passenger-info-screen').style.display = 'flex';
+                    
+                    showMessage(`Success! Ticket Validated.`, 'success');
+                    setTimeout(() => document.getElementById('twitter-input').focus(), 500);
+                } else {
+                    statusElement.textContent = result.message || "INVALID TICKET CODE. PLEASE TRY AGAIN.";
+                }
+            } catch (error) {
+                console.error("Verification error:", error);
+                statusElement.textContent = "NETWORK ERROR. CANNOT VERIFY CODE.";
+            } finally {
+                document.getElementById('claim-btn').innerHTML = originalText;
+                document.getElementById('claim-btn').disabled = false;
+            }
         });
 
-        document.getElementById('start-btn').addEventListener('click', () => {
+        // LOGIKA BARU UNTUK KLIK TOMBOL ISSUE TICKET (CLAIM & SAVE DATA KE GOOGLE SHEETS)
+        document.getElementById('start-btn').addEventListener('click', async () => {
             const originalText = document.getElementById('start-btn').innerHTML;
             document.getElementById('start-btn').innerHTML = 'GENERATING...';
-            sendDataToSpreadsheet();
-            setTimeout(() => {
-                document.getElementById('passenger-info-screen').style.display = 'none';
+            document.getElementById('start-btn').disabled = true;
+
+            const dataToSave = {
+                action: "claim",
+                ticketCode: pendingTicketCode,
+                twitter: "@" + userData.twitter,
+                wallet: userData.wallet
+            };
+
+            try {
+                const response = await fetch(GOOGLE_SHEET_WEBAPP_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "text/plain" },
+                    body: JSON.stringify(dataToSave)
+                });
+                
+                const result = await response.json();
+
+                if (result.status === "success") {
+                    document.getElementById('passenger-info-screen').style.display = 'none';
+                    generateBoardingPass();
+                } else {
+                    showMessage(result.message || "TICKET CLAIM FAILED", "error");
+                }
+            } catch (error) { 
+                console.error("Sheet Error:", error); 
+                showMessage("NETWORK ERROR", "error");
+            } finally {
                 document.getElementById('start-btn').innerHTML = originalText;
-                generateBoardingPass();
-            }, 800);
+                document.getElementById('start-btn').disabled = false;
+            }
         });
 
         // Anti-Bot Game Logic
